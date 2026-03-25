@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>iSHIPMENT — Version 4 Patient Urgency Results</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:     #0f1117;
+      --card:   #1a1d27;
+      --border: #2a2d3e;
+      --text:   #e8eaf0;
+      --muted:  #8b90a8;
+      --accent: #6c63ff;
+      --teal:   #00bfae;
+      --orange: #ff8c42;
+      --red:    #ff4d6d;
+      --green:  #43d98c;
+      --yellow: #ffd166;
+      --high:   #ff4d6d;
+      --medium: #ffd166;
+      --low:    #43d98c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+
+    /* ── Header ── */
+    .page-header { text-align: center; margin-bottom: 40px; }
+    .page-header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+    .page-header h1 span { color: var(--accent); }
+    .page-header p { color: var(--muted); margin-top: 8px; font-size: 0.95rem; }
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 600; margin: 0 4px;
+    }
+    .badge-v0 { background: #2a2d3e; color: var(--muted); }
+    .badge-v4 { background: rgba(108,99,255,0.2); color: var(--accent); }
+
+    /* ── Grids ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr;      gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr;  gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+    @media(max-width:900px) {
+      .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ── */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+    .card-title {
+      font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted); margin-bottom: 16px;
+    }
+
+    /* ── KPI cards ── */
+    .kpi { text-align: center; }
+    .kpi .val { font-size: 1.9rem; font-weight: 700; line-height: 1.1; }
+    .kpi .label { color: var(--muted); font-size: 0.82rem; margin-top: 6px; }
+    .kpi .delta {
+      font-size: 0.8rem; font-weight: 600; margin-top: 6px;
+      padding: 2px 8px; border-radius: 6px;
+    }
+    .delta-good { background: rgba(67,217,140,0.15); color: var(--green); }
+    .delta-bad  { background: rgba(255,77,109,0.15);  color: var(--red);   }
+    .delta-neut { background: rgba(139,144,168,0.15); color: var(--muted); }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 1.15rem; font-weight: 700;
+      margin: 36px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title span { color: var(--accent); }
+
+    /* ── Tables ── */
+    .cmp-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .cmp-table th {
+      text-align: left; padding: 10px 14px;
+      background: rgba(108,99,255,0.08);
+      border-bottom: 1px solid var(--border);
+      color: var(--muted); font-size: 0.78rem;
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .cmp-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    .cmp-table tr:last-child td { border-bottom: none; }
+    .cmp-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .highlight-row td { font-weight: 600; }
+    .val-better { color: var(--green); font-weight: 600; }
+    .val-worse  { color: var(--red);   font-weight: 600; }
+    .val-same   { color: var(--muted); }
+
+    /* ── Tier cards ── */
+    .tier-card { border-radius: 12px; padding: 20px; }
+    .tier-high   { border: 1px solid var(--high);   background: rgba(255,77,109,0.06); }
+    .tier-medium { border: 1px solid var(--yellow);  background: rgba(255,209,102,0.06); }
+    .tier-low    { border: 1px solid var(--green);  background: rgba(67,217,140,0.06); }
+    .tier-card h3 { font-size: 1rem; font-weight: 700; text-transform: uppercase; margin-bottom: 14px; }
+    .tier-high   h3 { color: var(--high);   }
+    .tier-medium h3 { color: var(--yellow); }
+    .tier-low    h3 { color: var(--green);  }
+    .tier-metric { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.88rem; }
+    .tier-metric .lbl { color: var(--muted); }
+    .tier-metric .val { font-weight: 600; }
+    .bar-wrap { background: rgba(255,255,255,0.06); border-radius: 999px; height: 8px; margin-top: 12px; overflow: hidden; }
+    .bar-fill  { height: 100%; border-radius: 999px; }
+
+    /* ── Alert ── */
+    .alert {
+      border-radius: 10px; padding: 14px 18px;
+      font-size: 0.88rem; line-height: 1.6; margin-bottom: 16px;
+    }
+    .alert-info    { background: rgba(108,99,255,0.1);  border-left: 3px solid var(--accent); }
+    .alert-warn    { background: rgba(255,209,102,0.1); border-left: 3px solid var(--yellow); }
+    .alert-success { background: rgba(67,217,140,0.1);  border-left: 3px solid var(--green);  }
+    .alert strong  { font-weight: 700; }
+
+    /* ── Chart containers ── */
+    .chart-wrap    { position: relative; height: 300px; }
+    .chart-wrap-lg { position: relative; height: 340px; }
+
+    /* ── Deadline / compliance table ── */
+    .dl-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .dl-table th {
+      text-align: center; padding: 9px 12px;
+      background: rgba(108,99,255,0.08);
+      border-bottom: 1px solid var(--border);
+      color: var(--muted); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .dl-table th:first-child { text-align: left; }
+    .dl-table td { text-align: center; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    .dl-table td:first-child { text-align: left; font-weight: 600; }
+    .dl-table tr:last-child td { border-bottom: none; }
+    .chip {
+      display: inline-block; padding: 2px 10px; border-radius: 6px;
+      font-size: 0.75rem; font-weight: 700;
+    }
+    .chip-ok   { background: rgba(67,217,140,0.15);  color: var(--green);  }
+    .chip-warn { background: rgba(255,209,102,0.15); color: var(--yellow); }
+    .chip-bad  { background: rgba(255,77,109,0.15);  color: var(--red);    }
+
+    /* ── Transport highlight box ── */
+    .transport-highlight {
+      background: linear-gradient(135deg, rgba(255,140,66,0.12), rgba(108,99,255,0.08));
+      border: 1px solid rgba(255,140,66,0.3);
+      border-radius: 12px; padding: 20px; text-align: center;
+    }
+    .transport-highlight .big { font-size: 2.2rem; font-weight: 800; color: var(--green); }
+    .transport-highlight .sub { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+    /* ── Footer ── */
+    .footer { text-align: center; margin-top: 48px; color: var(--muted); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<div class="page-header">
+  <h1>iSHIPMENT — <span>Version 4</span> Patient Urgency Hard-Deadline Results</h1>
+  <p>
+    <span class="badge badge-v0">Version 0 — Baseline (single global deadline)</span> versus
+    <span class="badge badge-v4">Version 4 — Patient-Specific Urgency Deadlines</span>
+    &nbsp;|&nbsp; 50 patients · 6 manufacturing sites · Gurobi Optimizer 12 · Apple M4 processor
+  </p>
+</div>
+
+<!-- ══════════════════ KPI ROW ══════════════════ -->
+<div class="section-title">📊 <span>Key Performance Indicators</span></div>
+<div class="grid-4">
+
+  <div class="card kpi">
+    <div class="card-title">Total Supply Chain Cost</div>
+    <div class="val" style="color:var(--accent)">$7.11M</div>
+    <div class="label">Version 4 optimal total cost</div>
+    <div class="delta delta-good">▼ $22,339 cheaper than Version 0</div>
+  </div>
+
+  <div class="card kpi">
+    <div class="card-title">Transportation Cost</div>
+    <div class="val" style="color:var(--teal)">$109,688</div>
+    <div class="label">Combined outbound + inbound shipping for all 50 patients</div>
+    <div class="delta delta-good">▼ $22,339 saved vs Version 0</div>
+  </div>
+
+  <div class="card kpi">
+    <div class="card-title">Average Turnaround Time</div>
+    <div class="val" style="color:var(--orange)">18.6 days</div>
+    <div class="label">Average vein-to-vein time across all patients</div>
+    <div class="delta delta-neut">+0.6 days above Version 0 target of 18 days</div>
+  </div>
+
+  <div class="card kpi">
+    <div class="card-title">Computation Time</div>
+    <div class="val" style="color:var(--yellow)">66.9 s</div>
+    <div class="label">Total CPU time · Gurobi solved in 2.74 seconds wall-clock</div>
+    <div class="delta delta-neut">Optimal gap 0.0000 %</div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ COST COMPARISON ══════════════════ -->
+<div class="section-title">💰 <span>Cost Breakdown</span> — Version 0 Baseline vs Version 4</div>
+<div class="grid-2">
+
+  <!-- Left: table -->
+  <div class="card">
+    <div class="card-title">Detailed Cost Comparison (in US Dollars)</div>
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Cost Component</th>
+          <th>Version 0 Baseline</th>
+          <th>Version 4 Hard-Deadline</th>
+          <th>Change</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>Capital Investment + Variable Manufacturing</strong><br>
+            <span style="color:var(--muted);font-size:0.8rem">
+              One-time facility setup cost plus the cost of manufacturing each therapy
+            </span>
+          </td>
+          <td>$6,015,394</td>
+          <td>$6,015,394</td>
+          <td class="val-same">No change — same two facilities opened (m1 and m4)</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Transportation Cost (outbound + inbound)</strong><br>
+            <span style="color:var(--muted);font-size:0.8rem">
+              Shipping samples from collection sites to manufacturing, and finished therapies back to hospitals
+            </span>
+          </td>
+          <td>$132,027</td>
+          <td class="val-better">$109,688</td>
+          <td class="val-better">▼ $22,339 saved (−16.9%)</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Raw Materials + Quality Control</strong><br>
+            <span style="color:var(--muted);font-size:0.8rem">
+              Fixed cost per therapy: materials ($10,476) and quality control testing ($9,312)
+            </span>
+          </td>
+          <td>$989,400</td>
+          <td>$989,400</td>
+          <td class="val-same">No change — 50 patients × $19,788 per patient</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>TOTAL COST</strong></td>
+          <td><strong>$7,136,821</strong></td>
+          <td class="val-better"><strong>$7,114,482</strong></td>
+          <td class="val-better"><strong>▼ $22,339 (−0.31%)</strong></td>
+        </tr>
+        <tr>
+          <td>Average cost per patient</td>
+          <td>$142,736</td>
+          <td class="val-better">$142,290</td>
+          <td class="val-better">▼ $447 per patient</td>
+        </tr>
+        <tr>
+          <td>Manufacturing facilities opened</td>
+          <td>m1 and m4</td>
+          <td>m1 and m4</td>
+          <td class="val-same">Identical selection</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-success" style="margin-top:16px">
+      <strong>Why is Version 4 cheaper?</strong>
+      By assigning longer deadlines to low-urgency patients (up to 24 days effective deadline),
+      the optimiser can route those patients via cheaper ground transport on one or both shipping legs,
+      instead of forcing everyone onto expensive air transport to meet a single tight 18-day target.
+    </div>
+  </div>
+
+  <!-- Right: TWO charts stacked -->
+  <div style="display:flex; flex-direction:column; gap:20px;">
+
+    <!-- Chart A: Grouped by component -->
+    <div class="card">
+      <div class="card-title">Cost by Component — Version 0 vs Version 4 (Side-by-Side)</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px">
+        Each pair of bars shows one cost component. The transport bar (right group) clearly shows the saving.
+      </div>
+      <div class="chart-wrap">
+        <canvas id="costGrouped"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart B: Transport only zoom-in -->
+    <div class="card">
+      <div class="card-title">Transportation Cost Only — Zoomed In</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px">
+        Same data as above, but showing <em>only the transportation cost</em> so the $22,339 saving is clearly visible.
+      </div>
+      <div class="transport-highlight" style="margin-bottom:12px">
+        <div class="big">$22,339 saved</div>
+        <div class="sub">Transportation cost reduced by 16.9 % — from $132,027 down to $109,688</div>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="transportBar"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ URGENCY TIERS ══════════════════ -->
+<div class="section-title">🏥 <span>Urgency Tier Analysis</span> — 50 Patients Split into Three Groups</div>
+
+<div class="alert alert-warn">
+  <strong>Important note on the "All 50 patients appear late" result:</strong>
+  The model contains a variable called <code>LATE[p]</code> (lateness for each patient p).
+  Because this variable does not appear in the objective function (we minimise cost only),
+  the solver is free to set it to any value within the allowed range — even when the patient
+  is actually on time. This makes the raw count of 50/50 misleading.
+  <br><br>
+  The correct way to measure deadline compliance is to directly compare
+  <strong>actual turnaround time</strong> against the <strong>due date</strong>:
+  only <strong>35 out of 50 patients</strong> genuinely exceeded their due date
+  (all high-urgency and all medium-urgency patients).
+  However, <strong>none of the 50 patients violated their effective deadline</strong>
+  (due date + maximum tolerated lateness), which is the hard constraint that must hold.
+  The low-urgency group (15 patients) actually finished <em>one day ahead</em> of their due date.
+</div>
+
+<div class="grid-3">
+
+  <!-- HIGH -->
+  <div class="tier-card tier-high">
+    <h3>🔴 High Urgency Patients</h3>
+    <div class="tier-metric">
+      <span class="lbl">Number of patients</span>
+      <span class="val">10 patients (20% of cohort)</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Target due date</span>
+      <span class="val">16 days from leukapheresis</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Maximum allowed lateness</span>
+      <span class="val">+1 extra day</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Effective hard deadline</span>
+      <span class="val" style="color:var(--high)">17 days total</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Achieved average turnaround</span>
+      <span class="val">17.0 days</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Turnaround vs due date</span>
+      <span class="val" style="color:var(--yellow)">+1 day (within tolerance)</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Violated effective deadline?</span>
+      <span class="val" style="color:var(--green)">No — 0 out of 10</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Transport routing required</span>
+      <span class="val">Air on both legs (fastest available)</span>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-fill" style="width:100%; background:var(--high)"></div>
+    </div>
+    <div style="text-align:right;font-size:0.75rem;color:var(--muted);margin-top:4px">
+      Turnaround 17 days out of 17-day effective deadline — at the cap
+    </div>
+  </div>
+
+  <!-- MEDIUM -->
+  <div class="tier-card tier-medium">
+    <h3>🟡 Medium Urgency Patients</h3>
+    <div class="tier-metric">
+      <span class="lbl">Number of patients</span>
+      <span class="val">25 patients (50% of cohort)</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Target due date</span>
+      <span class="val">18 days from leukapheresis</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Maximum allowed lateness</span>
+      <span class="val">+2 extra days</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Effective hard deadline</span>
+      <span class="val" style="color:var(--yellow)">20 days total</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Achieved average turnaround</span>
+      <span class="val">19.0 days</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Turnaround vs due date</span>
+      <span class="val" style="color:var(--yellow)">+1 day (within tolerance)</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Violated effective deadline?</span>
+      <span class="val" style="color:var(--green)">No — 0 out of 25</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Transport routing required</span>
+      <span class="val">Mixed — air outbound, ground inbound</span>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-fill" style="width:95%; background:var(--yellow)"></div>
+    </div>
+    <div style="text-align:right;font-size:0.75rem;color:var(--muted);margin-top:4px">
+      Turnaround 19 days out of 20-day effective deadline — 1 day slack
+    </div>
+  </div>
+
+  <!-- LOW -->
+  <div class="tier-card tier-low">
+    <h3>🟢 Low Urgency Patients</h3>
+    <div class="tier-metric">
+      <span class="lbl">Number of patients</span>
+      <span class="val">15 patients (30% of cohort)</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Target due date</span>
+      <span class="val">20 days from leukapheresis</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Maximum allowed lateness</span>
+      <span class="val">+4 extra days</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Effective hard deadline</span>
+      <span class="val" style="color:var(--green)">24 days total</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Achieved average turnaround</span>
+      <span class="val">19.0 days</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Turnaround vs due date</span>
+      <span class="val" style="color:var(--green)">−1 day (finished ahead of due date)</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Violated effective deadline?</span>
+      <span class="val" style="color:var(--green)">No — 0 out of 15</span>
+    </div>
+    <div class="tier-metric">
+      <span class="lbl">Transport routing required</span>
+      <span class="val">Ground on both legs (cheapest option)</span>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-fill" style="width:79%; background:var(--green)"></div>
+    </div>
+    <div style="text-align:right;font-size:0.75rem;color:var(--muted);margin-top:4px">
+      Turnaround 19 days out of 24-day effective deadline — 5 days slack
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ COMPLIANCE TABLE ══════════════════ -->
+<div class="section-title">📋 <span>Deadline Compliance Summary</span> — Corrected Interpretation</div>
+<div class="card">
+  <div class="alert alert-info" style="margin-bottom:16px">
+    <strong>How to read this table:</strong>
+    "Exceeded Due Date" counts patients whose actual turnaround time went past their target due date
+    (but may still be within their maximum tolerance window).
+    "Violated Effective Deadline" counts patients who exceeded the absolute hard limit
+    (due date + maximum tolerated lateness) — this must always be zero for the solution to be feasible.
+  </div>
+  <table class="dl-table">
+    <thead>
+      <tr>
+        <th>Urgency Group</th>
+        <th>Number of Patients</th>
+        <th>Target Due Date</th>
+        <th>Maximum Extra Days Allowed</th>
+        <th>Effective Hard Deadline</th>
+        <th>Average Turnaround Time</th>
+        <th>Exceeded Due Date?</th>
+        <th>Violated Hard Deadline?</th>
+        <th>Overall Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--high)">High Urgency</td>
+        <td>10</td>
+        <td>16 days</td>
+        <td>+1 day</td>
+        <td>17 days</td>
+        <td>17.0 days</td>
+        <td><span class="chip chip-warn">Yes — 10 out of 10 (by 1 day)</span></td>
+        <td><span class="chip chip-ok">No — 0 out of 10 ✓</span></td>
+        <td><span class="chip chip-warn">At tolerance cap</span></td>
+      </tr>
+      <tr>
+        <td style="color:var(--yellow)">Medium Urgency</td>
+        <td>25</td>
+        <td>18 days</td>
+        <td>+2 days</td>
+        <td>20 days</td>
+        <td>19.0 days</td>
+        <td><span class="chip chip-warn">Yes — 25 out of 25 (by 1 day)</span></td>
+        <td><span class="chip chip-ok">No — 0 out of 25 ✓</span></td>
+        <td><span class="chip chip-warn">Within tolerance</span></td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">Low Urgency</td>
+        <td>15</td>
+        <td>20 days</td>
+        <td>+4 days</td>
+        <td>24 days</td>
+        <td>19.0 days</td>
+        <td><span class="chip chip-ok">No — 0 out of 15 ✓</span></td>
+        <td><span class="chip chip-ok">No — 0 out of 15 ✓</span></td>
+        <td><span class="chip chip-ok">On time — 1 day early</span></td>
+      </tr>
+      <tr style="font-weight:700; background:rgba(108,99,255,0.05)">
+        <td>All Patients Combined</td>
+        <td>50</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>18.6 days</td>
+        <td><span class="chip chip-warn">35 out of 50 patients</span></td>
+        <td><span class="chip chip-ok">0 out of 50 — all feasible ✓</span></td>
+        <td><span class="chip chip-ok">All hard deadlines met</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════ CHARTS ROW ══════════════════ -->
+<div class="section-title">📈 <span>Visual Analysis</span></div>
+<div class="grid-2">
+
+  <div class="card">
+    <div class="card-title">
+      Average Turnaround Time vs Deadlines — by Urgency Group
+    </div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px">
+      The coloured bars show the achieved average turnaround time.
+      The dashed white line is the target due date.
+      The solid purple line is the effective hard deadline (due date + maximum allowed lateness).
+    </div>
+    <div class="chart-wrap">
+      <canvas id="trtBar"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Patient Distribution by Urgency Group</div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px">
+      How the 50 patients are split across the three urgency tiers.
+    </div>
+    <div class="chart-wrap">
+      <canvas id="tierDonut"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-top:20px">
+
+  <div class="card">
+    <div class="card-title">Version 4 Total Cost Breakdown — by Component</div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px">
+      Capital investment and manufacturing dominate at 84.6% of total cost.
+      Transportation is 1.5%, and materials plus quality control is 13.9%.
+    </div>
+    <div class="chart-wrap">
+      <canvas id="costDonut"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Turnaround Time vs Deadline — All Three Boundaries Side by Side
+    </div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px">
+      For each urgency group: the target due date (light), the achieved turnaround (coloured),
+      and the effective hard deadline cap (purple). The gap between the coloured bar and
+      the purple bar represents unused slack.
+    </div>
+    <div class="chart-wrap">
+      <canvas id="trtGrouped"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ SOLVER STATS ══════════════════ -->
+<div class="section-title">⚙️ <span>Solver Statistics and Feasibility Guarantee</span></div>
+<div class="grid-2">
+
+  <div class="card">
+    <div class="card-title">Gurobi Optimizer 12 — Model Size and Performance</div>
+    <table class="cmp-table">
+      <tr>
+        <td>Total constraints in the mathematical model</td>
+        <td style="text-align:right;font-weight:600">2,721,491</td>
+      </tr>
+      <tr>
+        <td>Total decision variables</td>
+        <td style="text-align:right;font-weight:600">2,042,916</td>
+      </tr>
+      <tr>
+        <td>Non-zero coefficients in the constraint matrix</td>
+        <td style="text-align:right;font-weight:600">12,840,893</td>
+      </tr>
+      <tr>
+        <td>Binary decision variables (yes/no decisions)</td>
+        <td style="text-align:right;font-weight:600">624,054</td>
+      </tr>
+      <tr>
+        <td>Integer decision variables (whole-number quantities)</td>
+        <td style="text-align:right;font-weight:600">650,054</td>
+      </tr>
+      <tr>
+        <td>Continuous variables (fractional quantities allowed)</td>
+        <td style="text-align:right;font-weight:600">1,392,862</td>
+      </tr>
+      <tr>
+        <td>Constraints remaining after pre-processing by solver</td>
+        <td style="text-align:right;font-weight:600;color:var(--green)">402,515 — reduced by 85.2%</td>
+      </tr>
+      <tr>
+        <td>Variables remaining after pre-processing</td>
+        <td style="text-align:right;font-weight:600;color:var(--green)">401,645 — reduced by 80.3%</td>
+      </tr>
+      <tr>
+        <td>Gurobi wall-clock time to find optimal solution</td>
+        <td style="text-align:right;font-weight:600">2.74 seconds</td>
+      </tr>
+      <tr>
+        <td>Branch-and-bound nodes explored</td>
+        <td style="text-align:right;font-weight:600">1 node (solved at root)</td>
+      </tr>
+      <tr>
+        <td>Optimality gap (proof of global optimality)</td>
+        <td style="text-align:right;font-weight:600;color:var(--green)">0.0000 % — globally optimal</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Feasibility Guarantee — Why the Model Will Always Have a Valid Solution</div>
+
+    <div class="alert alert-info" style="margin-bottom:14px">
+      <strong>The feasibility rule:</strong>
+      The model is guaranteed to have at least one valid solution as long as every patient's
+      effective deadline (due date + maximum allowed lateness) is at least as large as the
+      minimum physically achievable turnaround time.
+      <br><br>
+      The minimum possible turnaround time is:
+      <strong>1 day (air outbound) + 7 days (manufacturing) + 7 days (quality control) + 1 day (air inbound) = 16 days</strong>.
+      All three urgency tiers satisfy this condition.
+    </div>
+
+    <table class="dl-table">
+      <thead>
+        <tr>
+          <th>Urgency Group</th>
+          <th>Due Date + Maximum Lateness</th>
+          <th>Minimum Achievable Turnaround</th>
+          <th>Safety Margin</th>
+          <th>Model Feasible?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--high)">High Urgency</td>
+          <td>16 + 1 = 17 days</td>
+          <td>16 days</td>
+          <td style="color:var(--green)">+1 day margin</td>
+          <td><span class="chip chip-ok">Yes ✓</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--yellow)">Medium Urgency</td>
+          <td>18 + 2 = 20 days</td>
+          <td>16 days</td>
+          <td style="color:var(--green)">+4 days margin</td>
+          <td><span class="chip chip-ok">Yes ✓</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--green)">Low Urgency</td>
+          <td>20 + 4 = 24 days</td>
+          <td>16 days</td>
+          <td style="color:var(--green)">+8 days margin</td>
+          <td><span class="chip chip-ok">Yes ✓</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-warn" style="margin-top:14px">
+      <strong>Recommended fix for the LATE variable display issue:</strong>
+      Add a tiny coefficient on lateness in the objective function — for example,
+      <code>total cost + 0.001 × (sum of all patient lateness values)</code>.
+      This costs virtually nothing but forces the solver to minimise lateness to its true value
+      (zero when a patient is on time), so the reported lateness figures will be accurate.
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<div class="footer">
+  iSHIPMENT CAR-T Therapy Supply Chain Optimisation &nbsp;·&nbsp;
+  Version 4 — Patient-Specific Urgency Hard Deadlines &nbsp;·&nbsp;
+  Pyomo + Gurobi Optimizer 12 &nbsp;·&nbsp; Results generated 25 March 2026
+</div>
+
+<!-- ══════════════════ SCRIPTS ══════════════════ -->
+<script>
+Chart.defaults.color = '#8b90a8';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+// ── 1. Grouped cost bar (by component, V0 vs V4 side by side) ──
+new Chart(document.getElementById('costGrouped'), {
+  type: 'bar',
+  data: {
+    labels: [
+      'Capital Investment\n+ Manufacturing',
+      'Raw Materials\n+ Quality Control',
+      'Transportation\n(Outbound + Inbound)'
+    ],
+    datasets: [
+      {
+        label: 'Version 0 Baseline',
+        data: [6015394, 989400, 132027],
+        backgroundColor: 'rgba(139,144,168,0.5)',
+        borderColor:     'rgba(139,144,168,0.9)',
+        borderWidth: 1, borderRadius: 5
+      },
+      {
+        label: 'Version 4 Hard-Deadline',
+        data: [6015394, 989400, 109688],
+        backgroundColor: ['rgba(108,99,255,0.6)','rgba(0,191,174,0.6)','rgba(255,140,66,0.85)'],
+        borderColor:     ['rgba(108,99,255,1)',  'rgba(0,191,174,1)',  'rgba(255,140,66,1)'],
+        borderWidth: 1, borderRadius: 5
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: $${ctx.raw.toLocaleString()}`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: { callback: v => '$' + (v/1e6).toFixed(1) + 'M' },
+        title: { display: true, text: 'Cost (US Dollars)' }
+      }
+    }
+  }
+});
+
+// ── 2. Transport cost only — zoomed bar ──
+new Chart(document.getElementById('transportBar'), {
+  type: 'bar',
+  data: {
+    labels: ['Version 0 Baseline', 'Version 4 Hard-Deadline'],
+    datasets: [{
+      label: 'Transportation Cost (US Dollars)',
+      data: [132027, 109688],
+      backgroundColor: ['rgba(139,144,168,0.6)', 'rgba(255,140,66,0.85)'],
+      borderColor:     ['rgba(139,144,168,1)',    'rgba(255,140,66,1)'],
+      borderWidth: 1, borderRadius: 8
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` Transportation cost: $${ctx.raw.toLocaleString()}`
+        }
+      },
+      annotation: {}
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: {
+        min: 90000, max: 145000,
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: { callback: v => '$' + v.toLocaleString() },
+        title: { display: true, text: 'Transportation Cost (USD)' }
+      }
+    }
+  }
+});
+
+// ── 3. TRT vs due date line ──
+new Chart(document.getElementById('trtBar'), {
+  type: 'bar',
+  data: {
+    labels: ['High Urgency (10 patients)', 'Medium Urgency (25 patients)', 'Low Urgency (15 patients)'],
+    datasets: [
+      {
+        label: 'Achieved Average Turnaround Time (days)',
+        data: [17, 19, 19],
+        backgroundColor: ['rgba(255,77,109,0.8)', 'rgba(255,209,102,0.8)', 'rgba(67,217,140,0.8)'],
+        borderRadius: 6,
+        order: 2
+      },
+      {
+        label: 'Target Due Date (days)',
+        data: [16, 18, 20],
+        type: 'line',
+        borderColor: 'rgba(255,255,255,0.45)',
+        borderDash: [6, 4],
+        borderWidth: 2,
+        pointRadius: 6,
+        pointBackgroundColor: 'rgba(255,255,255,0.45)',
+        fill: false, order: 1
+      },
+      {
+        label: 'Effective Hard Deadline — Due Date + Maximum Allowed Lateness (days)',
+        data: [17, 20, 24],
+        type: 'line',
+        borderColor: 'rgba(108,99,255,0.9)',
+        borderDash: [3, 3],
+        borderWidth: 2,
+        pointRadius: 6,
+        pointBackgroundColor: 'rgba(108,99,255,0.9)',
+        fill: false, order: 0
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: {
+        min: 14, max: 27,
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        title: { display: true, text: 'Time (days)' }
+      }
+    }
+  }
+});
+
+// ── 4. Tier donut ──
+new Chart(document.getElementById('tierDonut'), {
+  type: 'doughnut',
+  data: {
+    labels: ['High Urgency — 10 patients', 'Medium Urgency — 25 patients', 'Low Urgency — 15 patients'],
+    datasets: [{
+      data: [10, 25, 15],
+      backgroundColor: ['rgba(255,77,109,0.8)', 'rgba(255,209,102,0.8)', 'rgba(67,217,140,0.8)'],
+      borderColor:     ['#ff4d6d', '#ffd166', '#43d98c'],
+      borderWidth: 2, hoverOffset: 8
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '58%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 14, padding: 16 } },
+      tooltip: {
+        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} patients` }
+      }
+    }
+  }
+});
+
+// ── 5. Cost donut ──
+new Chart(document.getElementById('costDonut'), {
+  type: 'doughnut',
+  data: {
+    labels: [
+      'Capital Investment + Variable Manufacturing — $6,015,394',
+      'Raw Materials + Quality Control — $989,400',
+      'Transportation (Outbound + Inbound) — $109,688'
+    ],
+    datasets: [{
+      data: [6015394, 989400, 109688],
+      backgroundColor: ['rgba(108,99,255,0.8)', 'rgba(0,191,174,0.8)', 'rgba(255,140,66,0.85)'],
+      borderColor:     ['#6c63ff', '#00bfae', '#ff8c42'],
+      borderWidth: 2, hoverOffset: 8
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '58%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 14, padding: 12, font: { size: 11 } } },
+      tooltip: {
+        callbacks: { label: ctx => ` $${ctx.raw.toLocaleString()} (${(ctx.raw/7114482*100).toFixed(1)}%)` }
+      }
+    }
+  }
+});
+
+// ── 6. Turnaround grouped: due date / achieved / hard deadline ──
+new Chart(document.getElementById('trtGrouped'), {
+  type: 'bar',
+  data: {
+    labels: ['High Urgency', 'Medium Urgency', 'Low Urgency'],
+    datasets: [
+      {
+        label: 'Target Due Date (days)',
+        data: [16, 18, 20],
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderRadius: 4
+      },
+      {
+        label: 'Achieved Average Turnaround (days)',
+        data: [17, 19, 19],
+        backgroundColor: ['rgba(255,77,109,0.8)', 'rgba(255,209,102,0.8)', 'rgba(67,217,140,0.8)'],
+        borderRadius: 4
+      },
+      {
+        label: 'Effective Hard Deadline — Due Date + Maximum Allowed Lateness (days)',
+        data: [17, 20, 24],
+        backgroundColor: 'rgba(108,99,255,0.45)',
+        borderRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: {
+        min: 0, max: 28,
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        title: { display: true, text: 'Time (days)' }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
