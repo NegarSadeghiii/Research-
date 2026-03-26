@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CAR-T Cell Therapy — Process Flowchart</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #eef2f7;
+    padding: 28px 20px 60px;
+    color: #1f2937;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .page-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a3a5c;
+    letter-spacing: 0.3px;
+  }
+  .page-header p {
+    font-size: 11.5px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+
+  .chart-wrapper {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 28px 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    overflow-x: auto;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* force mermaid SVG to be wide enough */
+  .mermaid svg {
+    min-width: 900px;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* ── force edge/arrow label text to be dark, never white ── */
+  .mermaid .edgeLabel,
+  .mermaid .edgeLabel span,
+  .mermaid .edgeLabel p,
+  .mermaid .edgeLabel foreignObject div {
+    color: #1f2937 !important;
+    background: #ffffff !important;
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    max-width: 1280px;
+    margin: 18px auto 0;
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 20px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 24px;
+  }
+  .legend-title {
+    width: 100%;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #6b7280;
+    margin-bottom: 2px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: #374151;
+  }
+  .ls {
+    width: 18px; height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.18);
+    flex-shrink: 0;
+  }
+
+  /* ── KEY RESOURCE TABLE ── */
+  .resource-table {
+    max-width: 1280px;
+    margin: 14px auto 0;
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 20px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+  }
+  .resource-table h2 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+    margin-bottom: 10px;
+  }
+  .resource-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .resource-table th {
+    background: #1a3a5c;
+    color: #fff;
+    padding: 6px 10px;
+    text-align: left;
+    font-weight: 600;
+  }
+  .resource-table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  .resource-table tr:nth-child(even) td { background: #f9fafb; }
+  .tag {
+    display: inline-block;
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 10px;
+    font-weight: 600;
+    margin: 1px 2px 1px 0;
+  }
+  .tag-staff    { background: #dbeafe; color: #1e40af; }
+  .tag-equip    { background: #fef3c7; color: #92400e; }
+  .tag-shared   { background: #fee2e2; color: #991b1b; }
+  .tag-prod     { background: #ede9fe; color: #4c1d95; }
+  .tag-fixed    { background: #d1fae5; color: #065f46; }
+  .tag-tri      { background: #e0f2fe; color: #075985; }
+  .tag-sc       { background: #fef9c3; color: #854d0e; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>AIDPATH CAR-T Cell Therapy — Discrete Event Simulation Process Flowchart</h1>
+  <p>CARAMBA Protocol &nbsp;·&nbsp; Würzburg University Clinic &nbsp;·&nbsp; Source: Szentpéteri et al. 2024 + AIDPATH AnyLogic Codebase</p>
+</div>
+
+<!-- ══════════ MERMAID FLOWCHART ══════════ -->
+<div class="chart-wrapper">
+<div class="mermaid">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor":       "#1e40af",
+    "primaryTextColor":   "#1f2937",
+    "primaryBorderColor": "#1e3a8a",
+    "lineColor":          "#374151",
+    "secondaryColor":     "#fef3c7",
+    "tertiaryColor":      "#f3f4f6",
+    "edgeLabelBackground":"#ffffff",
+    "fontFamily":         "Segoe UI, Arial, sans-serif",
+    "fontSize":           "12px"
+  },
+  "flowchart": { "htmlLabels": true, "curve": "basis", "nodeSpacing": 36, "rankSpacing": 44 }
+}}%%
+
+flowchart TD
+
+  %%--- TERMINALS ---
+  START(["&#9654; START"])
+  SINK(["&#9632; SINK &mdash; Patient Exit<br/>Record: Completion Time &bull; Protocol Deviations<br/>Exit Reason &bull; Total Time in System"])
+
+  %%--- ARRIVAL ---
+  ARR["<b>PATIENT ARRIVAL</b><br/>Distribution: Exponential &bull; Mean = 7 days<br/>Maximum patients = 50<br/>On arrival: assign ID &bull; set Therapy Start Day &bull; In System = True"]
+
+  %%--- STAGE 1 ---
+  S1["<b>STAGE 1 &mdash; SCREENING</b><br/>Protocol window: Day &minus;31 to Day &minus;29<br/>Duration: Triangular(1, 1.5, 2) days &bull; Mean = 1.5 days<br/>Resources: Specialist OR Study Nurse + ECG&#9733; + MRT&#9733;"]
+
+  %%--- DECISION 1 ---
+  D1{"Screening<br/>Passed?"}
+
+  RESCREEN["Re-screen Option<br/>Wait: Uniform(14, 30) days<br/>Return to Stage 1 &mdash; one retry allowed"]
+  X1(["&#10060; EXIT &mdash; Eligibility Rejected"])
+
+  %%--- STAGE 2 ---
+  S2["<b>STAGE 2 &mdash; ELIGIBILITY FOR LEUKAPHERESIS</b><br/>Protocol window: Day &minus;29 to Day &minus;26<br/>Duration: Triangular(1, 2, 3) days &bull; Mean = 2 days<br/>Resources: Specialist + Study Nurse"]
+
+  %%--- DECISION 2 ---
+  D2{"Leukapheresis<br/>Eligibility<br/>Passed?"}
+
+  RETRY2["Medical Intervention<br/>Wait: Uniform(7, 21) days<br/>One retry at Stage 2"]
+  X2(["&#10060; EXIT &mdash; Eligibility Rejected"])
+
+  %%--- STAGE 3 ---
+  S3["<b>STAGE 3 &mdash; LEUKAPHERESIS</b><br/>Protocol window: Day &minus;26 [zero-width point event]<br/>Duration: Triangular(0.5, 1, 1.5) days &bull; Mean = 1 day<br/>Resources: Apheresis Machine&#9733; (shared) + Specialist<br/>&#9935; SC-1: Cold chain packaging &bull; Lot tracking number assigned"]
+
+  %%--- STAGE 4 ---
+  S4["<b>STAGE 4 &mdash; CAR-T MANUFACTURING</b><br/>Protocol window: Day &minus;26 to Day &minus;12<br/>Duration: Triangular(10, 12, 14) days &bull; Mean = 12 days<br/>Resources: Production Unit (capacity = 2)<br/>Preemption: Wait for original resource<br/>&#9935; SC-2: Raw materials &mdash; viral vector, growth media, cytokines"]
+
+  %%--- STAGE 5 ---
+  S5["<b>STAGE 5 &mdash; QUALITY CONTROL</b><br/>Protocol window: Day &minus;12 to Day &minus;5<br/>Duration: Triangular(5, 6, 7) days &bull; Mean = 6 days<br/>Resources: Production Unit (same facility)<br/>Tests: Sterility &bull; Potency &bull; Identity &bull; Purity &bull; Viability &bull; Endotoxin"]
+
+  %%--- DECISION 3 ---
+  D3{"QC Batch<br/>Passed?"}
+
+  REMANUF["&#9888; RE-MANUFACTURING TRIGGERED<br/>QC Attempt Count = 1 &rarr; Protocol deviation recorded<br/>Return to Stage 4: Triangular(10,12,14) days<br/>Then Stage 5 again: Triangular(5,6,7) days"]
+  X3(["&#10060; EXIT &mdash; QC Failed Twice<br/>(Attempt Count = 2)"])
+
+  %%--- STAGE 6 ---
+  S6["<b>STAGE 6 &mdash; BASELINE ASSESSMENT</b><br/>Protocol window: Day &minus;8 to Day &minus;5<br/>Duration: Triangular(1, 2, 3) days &bull; Mean = 2 days<br/>Resources: Specialist OR Doctor in Training + Study Nurse<br/>+ MRT&#9733; (shared) + PET Scanner&#9733; (shared) + Routine Nurse"]
+
+  %%--- STAGE 7 ---
+  S7["<b>STAGE 7 &mdash; LYMPHODEPLETION ASSESSMENT</b><br/>Protocol window: Day &minus;5 [zero-width point event]<br/>Duration: Triangular(0.25, 0.5, 1) days &bull; Mean = 0.58 days<br/>Resources: Specialist OR Doctor in Training"]
+
+  %%--- STAGE 8 ---
+  S8["<b>STAGE 8 &mdash; LYMPHODEPLETION PREPARATION</b><br/>Protocol window: Day &minus;5 [zero-width point event]<br/>Duration: Triangular(0.25, 0.5, 1) days &bull; Mean = 0.58 days<br/>Resources: Routine Nurse<br/>&#9935; SC-3: Drug inventory &mdash; Fludarabine + Cyclophosphamide"]
+
+  %%--- STAGE 9 ---
+  S9["<b>STAGE 9 &mdash; LYMPHODEPLETION CHEMOTHERAPY</b><br/>Protocol window: Day &minus;5 to Day &minus;2<br/>Duration: Triangular(2, 2.5, 3) days &bull; Mean = 2.5 days<br/>Resources: Specialist + Study Nurse + Doctor in Training"]
+
+  %%--- STAGE 10 ---
+  S10["<b>STAGE 10 &mdash; REST / RECOVERY BREAK</b><br/>Protocol window: Day &minus;2 to Day 0<br/>Duration: FIXED = 2 days (deterministic &mdash; no variance)<br/>Resources: Specialist + Routine Nurse<br/>&#9935; SC-4: Product from cryostorage &bull; Cold chain check &bull; Thaw verification"]
+
+  %%--- STAGE 11 ---
+  S11["<b>STAGE 11 &mdash; PRE-INFUSION ASSESSMENT</b><br/>Protocol window: Day 0 [zero-width point event]<br/>Duration: Triangular(0.25, 0.5, 1) days &bull; Mean = 0.58 days<br/>Resources: Specialist + Study Nurse + ECG Machine&#9733; (shared)<br/>&#9935; SC-5: Final lot release &mdash; Pharmacist + Physician dual sign-off"]
+
+  %%--- STAGE 12 KEY MILESTONE ---
+  S12["&#9733; STAGE 12 &mdash; CAR-T CELL INFUSION &#9733;<br/>KEY MILESTONE &mdash; Day 0 Anchor<br/>Protocol window: Day 0 [zero-width point event]<br/>Duration: Triangular(0.5, 1, 1.5) days &bull; Mean = 1 day<br/>Resources: Specialist + Study Nurse + Study Nurse (TWO nurses required)"]
+
+  %%--- STAGE 13 ---
+  S13["<b>STAGE 13 &mdash; POST-INFUSION MONITORING</b><br/>Protocol window: Day 0 [zero-width point event]<br/>Duration: Triangular(0.25, 0.5, 1) days &bull; Mean = 0.58 days<br/>Resources: Specialist + Study Nurse + ECG Machine&#9733; (shared) + Routine Nurse"]
+
+  %%--- STAGE 14 ---
+  S14["<b>STAGE 14 &mdash; FOLLOW-UP</b><br/>Protocol window: Day +1 to Day +28<br/>Duration: FIXED = 27 days (deterministic &mdash; no variance)<br/>Resources: Specialist + Routine Nurse"]
+
+  %%━━━━━━━━━━━━━━ CONNECTIONS ━━━━━━━━━━━━━━
+
+  START --> ARR --> S1 --> D1
+
+  D1 -->|"&#10003; PASS ~70&ndash;85%"| S2
+  D1 -->|"&#10007; FAIL ~15&ndash;30%"| RESCREEN
+  RESCREEN -->|"Retry"| S1
+  RESCREEN -->|"Final Fail"| X1
+
+  S2 --> D2
+  D2 -->|"&#10003; PASS ~90%"| S3
+  D2 -->|"&#10007; FAIL ~10%"| RETRY2
+  RETRY2 -->|"Retry Pass"| S3
+  RETRY2 -->|"Retry Fail"| X2
+
+  S3 --> S4 --> S5 --> D3
+  D3 -->|"&#10003; PASS ~85&ndash;92%"| S6
+  D3 -->|"&#10007; FAIL 1st attempt"| REMANUF
+  REMANUF -->|"Return to Stage 4"| S4
+  D3 -->|"&#10007; FAIL 2nd attempt"| X3
+
+  S6 --> S7 --> S8 --> S9 --> S10 --> S11 --> S12 --> S13 --> S14 --> SINK
+
+  %%━━━━━━━━━━━━━━ STYLES ━━━━━━━━━━━━━━
+
+  classDef process     fill:#1e3a8a,stroke:#1e3a8a,color:#ffffff,font-weight:normal
+  classDef keyStage    fill:#0369a1,stroke:#0c4a6e,color:#ffffff
+  classDef decision    fill:#d97706,stroke:#b45309,color:#1f2937
+  classDef terminal    fill:#374151,stroke:#111827,color:#ffffff
+  classDef exitNode    fill:#b91c1c,stroke:#7f1d1d,color:#ffffff
+  classDef failNode    fill:#7c2d12,stroke:#431407,color:#fef3c7
+
+  class ARR,S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S13,S14 process
+  class S12 keyStage
+  class D1,D2,D3 decision
+  class START,SINK terminal
+  class X1,X2,X3 exitNode
+  class RESCREEN,RETRY2,REMANUF failNode
+</div>
+</div>
+
+<!-- ══════════ LEGEND ══════════ -->
+<div class="legend">
+  <div class="legend-title">Legend</div>
+  <div class="legend-item"><div class="ls" style="background:#1e3a8a"></div>Process Stage (Seize &rarr; Delay &rarr; Release)</div>
+  <div class="legend-item"><div class="ls" style="background:#0369a1;border:2px solid #fbbf24"></div>Key Milestone &mdash; CAR-T Infusion (Day 0 Anchor)</div>
+  <div class="legend-item"><div class="ls" style="background:#d97706"></div>Decision Point (Pass / Fail branch)</div>
+  <div class="legend-item"><div class="ls" style="background:#7c2d12"></div>Failure &bull; Retry &bull; Re-manufacturing loop</div>
+  <div class="legend-item"><div class="ls" style="background:#b91c1c"></div>Patient Exit from System</div>
+  <div class="legend-item"><div class="ls" style="background:#374151"></div>Start / End Terminal</div>
+  <div class="legend-item">&#9733; = Shared hospital equipment &mdash; contention with other departments</div>
+  <div class="legend-item">&#9935; SC-N = Supply Chain Decision Point</div>
+  <div class="legend-item">Triangular(min, mode, max) = Triangular probability distribution</div>
+  <div class="legend-item">FIXED = Deterministic delay with no stochastic variation</div>
+</div>
+
+<!-- ══════════ REFERENCE TABLE ══════════ -->
+<div class="resource-table">
+  <h2>Stage Reference — Distributions, Resources &amp; Protocol Windows</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Stage Name</th>
+        <th>Protocol Window</th>
+        <th>Distribution &amp; Duration</th>
+        <th>Mean</th>
+        <th>Resources</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>—</td>
+        <td>Patient Arrival</td>
+        <td>—</td>
+        <td><span class="tag tag-tri">Exponential</span> mean = 7 days</td>
+        <td>7 days</td>
+        <td>—</td>
+        <td>Max 50 patients; interarrival time</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>Screening</td>
+        <td>Day &minus;31 → Day &minus;29</td>
+        <td><span class="tag tag-tri">Triangular(1, 1.5, 2)</span></td>
+        <td>1.5 days</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span> OR
+          <span class="tag tag-staff">Study Nurse</span>
+          <span class="tag tag-shared">ECG &#9733;</span>
+          <span class="tag tag-shared">MRT &#9733;</span>
+        </td>
+        <td>Failure rate ~15–30% &bull; Re-screen option Uniform(14,30)d wait</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Eligibility for Leukapheresis</td>
+        <td>Day &minus;29 → Day &minus;26</td>
+        <td><span class="tag tag-tri">Triangular(1, 2, 3)</span></td>
+        <td>2.0 days</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span>
+          <span class="tag tag-staff">Study Nurse</span>
+        </td>
+        <td>Failure rate ~10% &bull; One retry after Uniform(7,21)d &bull; Preemption: Terminate serving</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Leukapheresis</td>
+        <td>Day &minus;26 [point]</td>
+        <td><span class="tag tag-tri">Triangular(0.5, 1, 1.5)</span></td>
+        <td>1.0 day</td>
+        <td>
+          <span class="tag tag-shared">Apheresis &#9733; (cap=1)</span>
+          <span class="tag tag-staff">Specialist</span>
+        </td>
+        <td>Zero-width protocol window &bull; SC-1: lot tracking + cold chain</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>CAR-T Manufacturing</td>
+        <td>Day &minus;26 → Day &minus;12</td>
+        <td><span class="tag tag-tri">Triangular(10, 12, 14)</span></td>
+        <td>12.0 days</td>
+        <td>
+          <span class="tag tag-prod">Production Unit (cap=2)</span>
+        </td>
+        <td>Longest stage &bull; Wait-for-original-resource preemption &bull; SC-2: raw materials</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Quality Control</td>
+        <td>Day &minus;12 → Day &minus;5</td>
+        <td><span class="tag tag-tri">Triangular(5, 6, 7)</span></td>
+        <td>6.0 days</td>
+        <td>
+          <span class="tag tag-prod">Production Unit</span>
+        </td>
+        <td>Failure ~8–15% &bull; 1st fail: re-manufacture &bull; 2nd fail: patient exits</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Baseline Assessment</td>
+        <td>Day &minus;8 → Day &minus;5</td>
+        <td><span class="tag tag-tri">Triangular(1, 2, 3)</span></td>
+        <td>2.0 days</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span> OR
+          <span class="tag tag-staff">Doctor in Training</span>
+          <span class="tag tag-staff">Study Nurse</span>
+          <span class="tag tag-shared">MRT &#9733;</span>
+          <span class="tag tag-shared">PET &#9733;</span>
+          <span class="tag tag-staff">Routine Nurse</span>
+        </td>
+        <td>Full pre-conditioning health check; organ function; tumour burden</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>Lymphodepletion Assessment</td>
+        <td>Day &minus;5 [point]</td>
+        <td><span class="tag tag-tri">Triangular(0.25, 0.5, 1)</span></td>
+        <td>0.58 days</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span> OR
+          <span class="tag tag-staff">Doctor in Training</span>
+        </td>
+        <td>Zero-width protocol window; go/no-go decision for lymphodepletion</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>Lymphodepletion Preparation</td>
+        <td>Day &minus;5 [point]</td>
+        <td><span class="tag tag-tri">Triangular(0.25, 0.5, 1)</span></td>
+        <td>0.58 days</td>
+        <td>
+          <span class="tag tag-staff">Routine Nurse</span>
+        </td>
+        <td>SC-3: Fludarabine + Cyclophosphamide drug inventory consumed</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td>Lymphodepletion Chemotherapy</td>
+        <td>Day &minus;5 → Day &minus;2</td>
+        <td><span class="tag tag-tri">Triangular(2, 2.5, 3)</span></td>
+        <td>2.5 days</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span>
+          <span class="tag tag-staff">Study Nurse</span>
+          <span class="tag tag-staff">Doctor in Training</span>
+        </td>
+        <td>Conditioning chemotherapy to deplete host immune cells</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td>Rest / Recovery Break</td>
+        <td>Day &minus;2 → Day 0</td>
+        <td><span class="tag tag-fixed">FIXED = 2 days</span></td>
+        <td>2.0 days</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span>
+          <span class="tag tag-staff">Routine Nurse</span>
+        </td>
+        <td>Deterministic &bull; No variance &bull; SC-4: product thaw + cold chain verification</td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td>Pre-Infusion Assessment</td>
+        <td>Day 0 [point]</td>
+        <td><span class="tag tag-tri">Triangular(0.25, 0.5, 1)</span></td>
+        <td>0.58 days</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span>
+          <span class="tag tag-staff">Study Nurse</span>
+          <span class="tag tag-shared">ECG &#9733; (cap=1)</span>
+        </td>
+        <td>SC-5: Final lot release &bull; pharmacist + physician dual sign-off &bull; point of no return</td>
+      </tr>
+      <tr style="background:#fefce8">
+        <td><b>12</b></td>
+        <td><b>&#9733; CAR-T Cell Infusion &mdash; KEY MILESTONE</b></td>
+        <td>Day 0 [point]</td>
+        <td><span class="tag tag-tri">Triangular(0.5, 1, 1.5)</span></td>
+        <td>1.0 day</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span>
+          <span class="tag tag-staff">Study Nurse</span>
+          <span class="tag tag-staff">Study Nurse (2nd)</span>
+        </td>
+        <td><b>Day 0 anchor for all protocol windows &bull; Two Study Nurses required simultaneously</b></td>
+      </tr>
+      <tr>
+        <td>13</td>
+        <td>Post-Infusion Monitoring</td>
+        <td>Day 0 [point]</td>
+        <td><span class="tag tag-tri">Triangular(0.25, 0.5, 1)</span></td>
+        <td>0.58 days</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span>
+          <span class="tag tag-staff">Study Nurse</span>
+          <span class="tag tag-shared">ECG &#9733; (cap=1)</span>
+          <span class="tag tag-staff">Routine Nurse</span>
+        </td>
+        <td>Cytokine release syndrome screening; neurotoxicity monitoring</td>
+      </tr>
+      <tr>
+        <td>14</td>
+        <td>Follow-Up</td>
+        <td>Day +1 → Day +28</td>
+        <td><span class="tag tag-fixed">FIXED = 27 days</span></td>
+        <td>27.0 days</td>
+        <td>
+          <span class="tag tag-staff">Specialist</span>
+          <span class="tag tag-staff">Routine Nurse</span>
+        </td>
+        <td>Deterministic &bull; No variance &bull; Outpatient response assessment</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:10px 30px; font-size:11px; color:#374151;">
+    <div><b>Resource Pool Capacities:</b>
+      <span class="tag tag-staff">Specialist = 3</span>
+      <span class="tag tag-staff">Study Nurse = 3</span>
+      <span class="tag tag-staff">Doctor in Training = 7</span>
+      <span class="tag tag-staff">Routine Nurse = 3</span>
+      <span class="tag tag-prod">Production Unit = 2</span>
+      <span class="tag tag-shared">Apheresis &#9733; = 1</span>
+      <span class="tag tag-shared">ECG &#9733; = 1</span>
+      <span class="tag tag-shared">MRT &#9733; = 1</span>
+      <span class="tag tag-shared">PET &#9733; = 1</span>
+    </div>
+    <div><b>Model time unit:</b> Minutes &nbsp;(days &times; 24 &times; 60 in simulation) &nbsp;&bull;&nbsp; <b>Recommended stop time:</b> 600,000 min (~417 days) &nbsp;&bull;&nbsp; <b>Start date:</b> 23 March 2026</div>
+    <div><b>&#9733; Shared:</b> Used by other hospital departments &mdash; primary source of resource contention and protocol deviations</div>
+    <div style="color:#6b7280"><b>Source:</b> Szentpéteri et al., Procedia CIRP, CIRP BioM 2024 &bull; AIDPATH AnyLogic codebase &bull; Assumptions declared: failure rates and retry wait times are literature-based estimates</div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    securityLevel: 'loose'
+  });
+</script>
+</body>
+</html>
