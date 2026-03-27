@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAR-T Supply Chain Optimizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f5f7;--sf:#fff;--brd:#e0e3e8;--brd2:#ced2d9;
+  --tx:#1a1d26;--dim:#5f6672;--mut:#9ca3af;
+  --ac:#2563eb;--ac2:#dbeafe;--acd:#1d4ed8;
+  --g:#059669;--gb:#d1fae5;--gl:#ecfdf5;
+  --r:#dc2626;--rb:#fee2e2;
+  --am:#d97706;--ab:#fef3c7;
+  --cy:#0891b2;--pu:#7c3aed;
+  --rad:8px;--sh:0 1px 4px rgba(0,0,0,.06);
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:13px;line-height:1.5;min-height:100vh}
+
+/* ── Header ── */
+.hd{background:#fff;border-bottom:1px solid var(--brd);padding:10px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20}
+.hd-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--ac),var(--pu));border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;flex-shrink:0}
+.hd h1{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.hd .sub{font-size:10px;color:var(--dim)}
+.hd-r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.pill{padding:3px 10px;border-radius:16px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.pill-g{background:var(--gb);color:var(--g)}.pill-a{background:var(--ab);color:var(--am)}
+
+/* ── Page ── */
+.page{max-width:1200px;margin:0 auto;padding:16px 24px 40px}
+
+/* ── Persistent Sidebar (push layout, like Claude) ── */
+.layout{display:flex;min-height:calc(100vh - 49px)}
+.sidebar{width:280px;background:#fff;border-right:1px solid var(--brd);flex-shrink:0;overflow-y:auto;transition:margin-left .3s cubic-bezier(.4,0,.2,1),opacity .2s;display:flex;flex-direction:column}
+.sidebar.collapsed{margin-left:-248px}
+.sidebar.collapsed .sidebar-body{visibility:hidden}
+.sidebar.collapsed .sidebar-head h3{visibility:hidden}
+.sidebar.collapsed .sidebar-head{justify-content:flex-end;padding-right:4px}
+.sidebar.collapsed .sidebar-close{transform:rotate(180deg)}
+.sidebar-head{padding:10px 14px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.sidebar-head h3{font-size:12px;font-weight:700;color:var(--dim)}
+.sidebar-close{margin-left:auto;width:28px;height:28px;border:1px solid var(--brd);background:#f8f9fb;font-size:14px;color:var(--dim);cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.sidebar-close:hover{background:var(--ac2);color:var(--ac);border-color:var(--ac)}
+.sidebar.collapsed .sidebar-close{width:32px;height:32px;font-size:16px;background:var(--ac);color:#fff;border-color:var(--ac);border-radius:0 8px 8px 0;box-shadow:2px 0 8px rgba(37,99,235,.2)}
+.sidebar-body{flex:1;overflow-y:auto;padding:10px}
+.sidebar-body .pn{margin-bottom:10px}
+.main-content{flex:1;overflow-y:auto;min-width:0}
+.settings-btn{background:none;border:1px solid var(--brd);border-radius:6px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;font-family:inherit;color:var(--dim);transition:.15s}
+.settings-btn:hover{background:var(--ac2);color:var(--ac);border-color:var(--ac)}
+
+/* ── Collapsible sections (for help, patient tables) ── */
+.collapse-hdr{padding:10px 14px;background:#f8f9fb;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.collapse-hdr:hover{background:#f0f2f5}
+.collapse-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--dim)}
+.collapse-hdr .r{margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.collapse-hdr .chevron{font-size:14px;color:var(--mut);transition:transform .2s;flex-shrink:0}
+.collapse-hdr.open .chevron{transform:rotate(90deg)}
+.collapse-body{display:none;overflow:hidden}
+.collapse-body.open{display:block}
+
+/* ── Tabs ── */
+.tabs{display:flex;border-bottom:2px solid var(--brd);margin-bottom:16px}
+.tab{padding:8px 16px;font-size:11px;font-weight:600;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s}
+.tab.a{color:var(--ac);border-bottom-color:var(--ac)}.tab:hover:not(.a){color:var(--tx)}
+.tp{display:none}.tp.a{display:block}
+
+/* ── Sections ── */
+.sec{background:#fff;border:1px solid var(--brd);border-radius:var(--rad);margin-bottom:16px;box-shadow:var(--sh);overflow:hidden}
+.sh{padding:8px 14px;background:#f8f9fb;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px}
+.sh h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--dim)}
+.sh .r{margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+
+/* ── Settings panel ── */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:14px}
+@media(max-width:800px){.settings-grid{grid-template-columns:1fr}}
+.pn{border:1px solid var(--brd);border-radius:var(--rad);overflow:hidden}
+.pn-h{padding:6px 10px;background:#f8f9fb;border-bottom:1px solid var(--brd);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--dim)}
+.pn-b{padding:8px 10px}
+label{display:block;font-size:9px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px}
+input[type=number],select{width:100%;padding:5px 7px;background:#f9fafb;border:1px solid var(--brd);border-radius:5px;font-size:11px;font-family:inherit;outline:none;color:var(--tx)}
+input[type=number]:focus{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac2)}
+.rw{display:flex;gap:6px;margin-bottom:6px}.rw>div{flex:1}
+
+/* Tau */
+.tau-v{font-size:26px;font-weight:800;color:var(--ac);text-align:center;font-variant-numeric:tabular-nums;line-height:1}
+.tau-l{font-size:8px;color:var(--mut);text-align:center;margin-top:1px}
+input[type=range]{width:100%;height:6px;-webkit-appearance:none;background:linear-gradient(90deg,var(--gb) 0%,var(--ab) 50%,var(--rb) 100%);border-radius:3px;outline:none;margin:10px 0;border:1px solid var(--brd)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--ac);cursor:pointer;box-shadow:0 2px 6px rgba(37,99,235,.3);border:2px solid #fff;margin-top:-7px}
+.rl{display:flex;justify-content:space-between;font-size:7px;color:var(--mut)}
+
+/* Urgency mini */
+.ug{width:100%;border-collapse:collapse;font-size:10px}
+.ug th{font-size:8px;font-weight:600;color:var(--mut);padding:2px 3px;text-align:center;border-bottom:1px solid var(--brd)}
+.ug td{padding:2px 2px;text-align:center}
+.ug input{width:100%;min-width:0;padding:3px 2px;font-size:10px;text-align:center}
+.udot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.eff{font-weight:700;font-size:10px}.eff-w{color:var(--r)}.eff-o{color:var(--g)}
+.note{font-size:8px;color:var(--dim);margin-top:4px;padding:4px 6px;background:#f8f9fb;border-radius:4px;border-left:2px solid var(--ac);line-height:1.3}
+
+/* Buttons */
+.btn{padding:8px 14px;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.btn-p{background:var(--ac);color:#fff}.btn-p:hover{background:var(--acd)}.btn-p:disabled{opacity:.35;cursor:not-allowed}
+.btn-s{background:#f3f4f6;color:var(--tx);border:1px solid var(--brd)}.btn-s:hover{background:#e5e7eb}
+.btn-sm{padding:4px 10px;font-size:10px}
+.pre{background:#fff;color:var(--dim);border:1px solid var(--brd);padding:3px 9px;font-size:9px;border-radius:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+.pre:hover{background:var(--ac2);color:var(--ac);border-color:var(--ac)}
+.sp{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .5s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Scenario Table ── */
+.st{width:100%;border-collapse:collapse;font-size:11px}
+.st th{padding:5px 6px;text-align:center;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;color:var(--mut);border-bottom:2px solid var(--brd);background:#f8f9fb;white-space:nowrap;position:sticky;top:0;z-index:1;cursor:help}
+/* Instant custom tooltips */
+.st th[data-tip]{position:relative}
+.st th[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:50%;top:100%;transform:translateX(-50%);background:var(--tx);color:#fff;padding:5px 10px;border-radius:5px;font-size:9px;font-weight:500;text-transform:none;letter-spacing:0;white-space:normal;width:max-content;max-width:220px;z-index:10;margin-top:4px;box-shadow:0 4px 12px rgba(0,0,0,.25);line-height:1.4;pointer-events:none}
+.st td{padding:3px 3px;text-align:center;border-bottom:1px solid #f0f1f3}
+.st input{width:100%;padding:3px 2px;font-size:10px;text-align:center;border:1px solid var(--brd);border-radius:4px;background:#fff;font-family:inherit;outline:none;min-width:0}
+.st input:focus{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac2)}
+.st .lc{text-align:left;min-width:70px}.st .lc input{text-align:left;font-weight:600}
+.gh{font-size:7px;display:block;line-height:1;margin-bottom:1px}
+.dbtn{width:20px;height:20px;border:none;background:none;color:var(--mut);cursor:pointer;border-radius:4px;font-size:13px;display:flex;align-items:center;justify-content:center}
+.dbtn:hover{background:var(--rb);color:var(--r)}
+.cd{width:9px;height:9px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px var(--brd)}
+/* Hide mfg columns by default */
+.mfg-col{display:none}
+.mfg-col.show{display:table-cell}
+
+/* ── Result tables ── */
+.rt{width:100%;border-collapse:collapse;font-size:11px}
+.rt th{padding:6px 8px;text-align:left;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--mut);border-bottom:2px solid var(--brd);background:#f8f9fb;position:sticky;top:0;z-index:1}
+.rt td{padding:5px 8px;border-bottom:1px solid #f0f1f3;font-variant-numeric:tabular-nums}
+.rt tr:hover{background:#f9fafb}
+.vg{color:var(--g);font-weight:700}.vr{color:var(--r);font-weight:700}.vb{font-weight:700}
+
+/* ── Charts ── */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.cc{background:#fff;border:1px solid var(--brd);border-radius:var(--rad);padding:14px;box-shadow:var(--sh)}
+.cc h4{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px}
+/* Column chart */
+.col-area{position:relative}
+.col-chart{display:flex;align-items:flex-end;gap:4px;height:160px;padding:16px 8px 0}
+.col-axis{border-top:1.5px solid var(--brd);display:flex;gap:4px;padding:6px 8px 0}
+.col-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end;max-width:60px}
+.col-val{font-size:8px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.col-bar{width:60%;border-radius:5px 5px 0 0;min-height:2px;position:relative;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.35);border-bottom:none;transition:height .6s cubic-bezier(.22,1,.36,1)}
+.col-bar::after{content:'';position:absolute;inset:0;border-radius:5px 5px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.3) 0%,rgba(255,255,255,0) 30%);pointer-events:none}
+.col-lbl{flex:1;text-align:center;font-size:7.5px;font-weight:600;color:var(--dim);max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* HiGHS dashed reference */
+.col-ref{position:absolute;left:-6px;right:-6px;border-top:2px dashed var(--am);pointer-events:none;z-index:2}
+.col-ref-chip{position:absolute;right:-4px;top:-12px;font-size:6px;font-weight:700;color:var(--am);background:var(--ab);padding:1px 4px;border-radius:3px;white-space:nowrap}
+/* Toggle */
+.toggle{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;color:var(--dim);cursor:pointer}
+.toggle input{accent-color:var(--ac);width:14px;height:14px}
+
+/* ── Patient decision collapsible ── */
+.patient-toggle{display:flex;align-items:center;gap:6px;padding:6px 12px;cursor:pointer;user-select:none;font-size:10px;font-weight:600;color:var(--dim);border-bottom:1px solid var(--brd)}
+.patient-toggle:hover{background:#f8f9fb}
+.patient-toggle .pchev{font-size:12px;transition:transform .2s}
+.patient-toggle.open .pchev{transform:rotate(90deg)}
+.patient-body{display:none;max-height:300px;overflow-y:auto}
+.patient-body.open{display:block}
+
+/* ── Help ── */
+.help{max-width:800px;margin:0 auto}
+.help h2{font-size:16px;font-weight:800;margin:20px 0 8px;color:var(--tx)}
+.help h3{font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--ac)}
+.help p{margin-bottom:8px;color:var(--dim);font-size:12px;line-height:1.6}
+.help .math{font-family:'JetBrains Mono',monospace;background:#f3f4f6;padding:12px 16px;border-radius:6px;font-size:11px;margin:8px 0 12px;border-left:3px solid var(--ac);overflow-x:auto;line-height:1.7;color:var(--tx)}
+.help ul{margin:6px 0 10px 20px;color:var(--dim);font-size:12px;line-height:1.7}
+.help .tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700}
+.help .tag-b{background:var(--ac2);color:var(--ac)}.help .tag-g{background:var(--gb);color:var(--g)}.help .tag-r{background:var(--rb);color:var(--r)}
+
+/* ── Progress widget (bottom-right corner) ── */
+.pw{position:fixed;bottom:14px;right:14px;z-index:50;background:#fff;border:1px solid var(--brd);border-radius:10px;padding:8px 14px;box-shadow:0 4px 16px rgba(0,0,0,.1);font-size:10px;display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(10px) scale(.95);transition:all .25s ease;pointer-events:none;max-width:280px}
+.pw.on{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.pw-bar{width:60px;height:4px;background:var(--brd);border-radius:2px;overflow:hidden;flex-shrink:0}
+.pw-fill{height:100%;background:linear-gradient(90deg,var(--ac),var(--pu));border-radius:2px;transition:width .3s ease}
+.pw-pulse{animation:pw-p 1.2s ease-in-out infinite}
+@keyframes pw-p{0%,100%{width:20%;margin-left:0}50%{width:40%;margin-left:60%}}
+.pw-msg{color:var(--dim);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pw-dots{display:flex;gap:3px;flex-shrink:0}
+.pw-dot{width:5px;height:5px;border-radius:50%;background:var(--brd);transition:background .2s}
+.pw-dot.done{background:var(--g)}.pw-dot.active{background:var(--ac);animation:pw-dp .8s ease infinite}
+@keyframes pw-dp{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
+
+/* ── Misc ── */
+.toast{position:fixed;bottom:14px;right:14px;background:#fff;border:1px solid var(--brd);border-radius:8px;padding:8px 16px;box-shadow:0 4px 16px rgba(0,0,0,.1);font-size:11px;opacity:0;transform:translateY(14px);transition:.25s;z-index:100}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* View toggle pill */
+.vtog{background:none;border:none;padding:5px 16px;font-size:10px;font-weight:600;font-family:inherit;border-radius:16px;cursor:pointer;color:var(--dim);transition:all .2s}
+.vtog:hover{color:var(--tx)}
+.vtog-a{background:#fff;color:var(--ac);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* Popup button */
+.pop-btn{width:24px;height:24px;border:1px solid var(--brd);background:#f8f9fb;border-radius:5px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:.15s;padding:0;line-height:1}
+.pop-btn:hover{background:var(--ac2);border-color:var(--ac)}
+
+/* Result popup overlay */
+.popup-ov{position:fixed;inset:0;background:rgba(0,0,0,.3);backdrop-filter:blur(3px);z-index:40;display:none;align-items:center;justify-content:center}
+.popup-ov.show{display:flex}
+.popup{background:#fff;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.18);width:500px;max-height:85vh;overflow-y:auto;padding:0;position:relative}
+.popup-close{position:absolute;top:8px;right:8px;width:28px;height:28px;border:none;background:#f3f4f6;border-radius:6px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--dim);z-index:1}
+.popup-close:hover{background:var(--rb);color:var(--r)}
+.popup-head{padding:16px 20px 12px;border-bottom:1px solid var(--brd)}
+.popup-head h3{font-size:14px;font-weight:700}
+.popup-body{padding:16px 20px}
+
+/* Mini metric cards in popup */
+.pm-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.pm{background:#f8f9fb;border:1px solid var(--brd);border-radius:8px;padding:10px 8px;text-align:center}
+.pm .pv{font-size:18px;font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums}
+.pm .pl{font-size:7px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+
+/* Mini bar in popup */
+.pm-bar{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px}
+.pm-bar-label{width:45px;font-weight:600;text-align:right;font-size:9px}
+.pm-bar-track{flex:1;height:14px;background:#f3f4f6;border-radius:3px;overflow:hidden}
+.pm-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:2px}
+@media(max-width:1000px){.cg{grid-template-columns:1fr}}
+@media(max-width:800px){.settings-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ════ HEADER ════ -->
+<div class="hd">
+  <svg viewBox="0 0 36 36" style="width:32px;height:32px;flex-shrink:0">
+  <defs>
+    <linearGradient id="lg2" x1="0" y1="0" x2="36" y2="36"><stop stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient>
+  </defs>
+  <rect width="36" height="36" rx="9" fill="url(#lg2)"/>
+  <!-- T-cell: outer ring -->
+  <circle cx="18" cy="15" r="8" stroke="#fff" stroke-width="1.3" fill="none" opacity=".85"/>
+  <!-- T-cell: inner nucleus -->
+  <circle cx="18" cy="15" r="3.5" fill="#fff" opacity=".25"/>
+  <!-- T letter inside cell -->
+  <text x="18" y="18.5" text-anchor="middle" fill="#fff" font-family="Inter,system-ui" font-size="9" font-weight="800">T</text>
+  <!-- Supply chain: 3 connected nodes -->
+  <circle cx="8" cy="29" r="2.5" fill="#fff" opacity=".6"/>
+  <circle cx="18" cy="29" r="2.5" fill="#fff" opacity=".8"/>
+  <circle cx="28" cy="29" r="2.5" fill="#fff" opacity=".6"/>
+  <line x1="10.5" y1="29" x2="15.5" y2="29" stroke="#fff" stroke-width="1.2" opacity=".5"/>
+  <line x1="20.5" y1="29" x2="25.5" y2="29" stroke="#fff" stroke-width="1.2" opacity=".5"/>
+</svg>
+  <div><h1>CAR-T Supply Chain Optimizer</h1><div class="sub">CP-SAT &middot; Parallel Scenario Analysis &middot; Solver Benchmark</div></div>
+  <div class="hd-r">
+    <button class="settings-btn" onclick="toggleSidebar()">&#9776; Settings</button>
+    <span class="pill pill-g" id="pill">Ready</span>
+  </div>
+</div>
+
+<!-- ════ PROGRESS WIDGET ════ -->
+<div class="pw" id="pw"><div class="pw-bar"><div class="pw-fill" id="pwFill" style="width:0%"></div></div><span class="pw-msg" id="pwMsg"></span><div class="pw-dots" id="pwDots"></div></div>
+
+<!-- ════ LAYOUT ════ -->
+<div class="layout">
+<!-- ── Sidebar ── -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <h3>Settings</h3>
+    <button class="sidebar-close" onclick="toggleSidebar()" title="Collapse">&lsaquo;</button>
+  </div>
+  <div class="sidebar-body">
+    <div class="pn"><div class="pn-h">Patients &amp; Tightness</div><div class="pn-b">
+      <!-- Patients (N) -->
+      <label>Patients (N)</label>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:8px;color:var(--mut);width:12px;text-align:right">5</span>
+        <input type="range" id="sNr" min="5" max="50" step="5" value="25" list="nTicks" oninput="document.getElementById('sN').value=this.value" style="flex:1">
+        <datalist id="nTicks"><option value="5"><option value="10"><option value="15"><option value="20"><option value="25"><option value="30"><option value="35"><option value="40"><option value="45"><option value="50"></datalist>
+        <span style="font-size:8px;color:var(--mut);width:14px">50</span>
+        <input type="number" id="sN" value="25" min="5" max="50" step="5" style="width:42px;text-align:center;font-weight:700;flex-shrink:0" oninput="document.getElementById('sNr').value=this.value">
+      </div>
+      <!-- Tau -->
+      <label>Tightness Factor (&tau;)</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:8px;color:var(--mut);width:12px;text-align:right">0</span>
+        <input type="range" id="ts" min="0" max="1" step="0.05" value="0" list="tTicks" oninput="document.getElementById('tN').value=this.value;uTau()" style="flex:1">
+        <datalist id="tTicks"><option value="0"><option value="0.1"><option value="0.2"><option value="0.3"><option value="0.4"><option value="0.5"><option value="0.6"><option value="0.7"><option value="0.8"><option value="0.9"><option value="1"></datalist>
+        <span style="font-size:8px;color:var(--mut);width:14px">1.0</span>
+        <input type="number" id="tN" value="0" min="0" max="1" step="0.05" style="width:42px;text-align:center;font-weight:700;flex-shrink:0" oninput="document.getElementById('ts').value=this.value;uTau()">
+      </div>
+    </div></div>
+
+    <div class="pn"><div class="pn-h">Urgency Groups</div><div class="pn-b">
+      <table class="ug"><tr><th></th><th>Grp</th><th>%</th><th>Due</th><th>Tol</th><th>Eff</th></tr>
+      <tr><td><span class="udot" style="background:var(--r)"></span></td><td style="font-weight:700;font-size:9px">H</td>
+        <td><input type="number" id="uhf" value="20" onchange="uTau()"></td><td><input type="number" id="uhd" value="16" onchange="uTau()"></td>
+        <td><input type="number" id="uht" value="1" onchange="uTau()"></td><td class="eff" id="uhe">17</td></tr>
+      <tr><td><span class="udot" style="background:var(--am)"></span></td><td style="font-weight:700;font-size:9px">M</td>
+        <td><input type="number" id="umf" value="50" onchange="uTau()"></td><td><input type="number" id="umd" value="18" onchange="uTau()"></td>
+        <td><input type="number" id="umt" value="2" onchange="uTau()"></td><td class="eff" id="ume">20</td></tr>
+      <tr><td><span class="udot" style="background:var(--g)"></span></td><td style="font-weight:700;font-size:9px">L</td>
+        <td><input type="number" id="ulf" value="30" onchange="uTau()"></td><td><input type="number" id="uld" value="20" onchange="uTau()"></td>
+        <td><input type="number" id="ult" value="4" onchange="uTau()"></td><td class="eff" id="ule">24</td></tr>
+      </table>
+    </div></div>
+
+    <div class="pn"><div class="pn-h">Processing (days)</div><div class="pn-b">
+      <div class="rw"><div><label>Mfg</label><input type="number" id="pM" value="7" min="1" max="21" onchange="uTau()"></div>
+      <div><label>QC</label><input type="number" id="pQ" value="7" min="1" max="14" onchange="uTau()"></div>
+      <div><label>Fac</label><input type="number" id="pF" value="2" min="1" max="6"></div></div>
+      <div class="note" id="minN">Min TRT: <b>17d</b></div>
+    </div></div>
+
+    <button class="btn btn-p" id="bRun" onclick="runSingle()" style="width:100%">Run Single Experiment</button>
+  </div>
+</div>
+
+<!-- ── Main Content ── -->
+<div class="main-content">
+<div class="page">
+
+  <!-- Tabs: Scenarios | Help -->
+  <div class="tabs">
+    <div class="tab a" data-t="sc" onclick="mt('sc')">Scenario Analysis</div>
+    <div class="tab" data-t="help" onclick="mt('help')">Help</div>
+  </div>
+
+  <div class="tp a" id="p-sc">
+  <!-- ── 2. Scenario Table ── -->
+  <div class="sec">
+    <div class="sh"><h3>Scenario Setup</h3><div class="r">
+      <span style="font-size:9px;color:var(--mut)">Presets:</span>
+      <button class="pre" onclick="pre('base')">Base</button>
+      <button class="pre" onclick="pre('tau')">Tau Sweep</button>
+      <button class="pre" onclick="pre('scale')">Scale</button>
+      <button class="pre" onclick="pre('tech')">Tech</button>
+      <button class="pre" onclick="pre('doe')">Full DOE</button>
+      <button class="pre" style="background:var(--ac2);color:var(--ac);border-color:var(--ac)" onclick="runFeasibility()">Feasibility Boundary</button>
+      <button class="btn-s btn-sm" onclick="addSc()" style="margin-left:6px">+ Add Row</button>
+      <button class="btn-s btn-sm" onclick="toggleMfgCols()" id="mfgTogBtn" style="margin-left:4px">Show Mfg</button>
+      <label class="toggle" style="margin-left:8px"><input type="checkbox" id="bmToggle"> HiGHS Baseline</label>
+      <button class="btn btn-p btn-sm" id="bAll" onclick="runAll()" style="padding:5px 16px">Run All</button>
+    </div></div>
+    <div style="overflow-x:auto"><table class="st" id="stbl"><thead><tr>
+      <th style="width:22px">#</th>
+      <th style="text-align:left;min-width:70px" data-tip="Scenario name">Label</th>
+      <th data-tip="Number of patients in the simulation">N</th>
+      <th data-tip="Tightness factor (0=relaxed, 1=tight). Deadline = BaseDue + Tolerance x (1-tau)">&tau;</th>
+      <th class="mfg-col" data-tip="High-urgency: base due date (days). Most critical patients."><span class="gh" style="color:var(--r)">H</span>Due</th>
+      <th class="mfg-col" data-tip="High-urgency: extra tolerance days. At tau=0, full tolerance added."><span class="gh" style="color:var(--r)">H</span>Tol</th>
+      <th class="mfg-col" data-tip="% of patients in high-urgency group"><span class="gh" style="color:var(--r)">H</span>%</th>
+      <th class="mfg-col" data-tip="Medium-urgency: base due date (days)"><span class="gh" style="color:var(--am)">M</span>Due</th>
+      <th class="mfg-col" data-tip="Medium-urgency: extra tolerance days"><span class="gh" style="color:var(--am)">M</span>Tol</th>
+      <th class="mfg-col" data-tip="% of patients in medium-urgency group"><span class="gh" style="color:var(--am)">M</span>%</th>
+      <th class="mfg-col" data-tip="Low-urgency: base due date (days). Stable patients."><span class="gh" style="color:var(--g)">L</span>Due</th>
+      <th class="mfg-col" data-tip="Low-urgency: extra tolerance days"><span class="gh" style="color:var(--g)">L</span>Tol</th>
+      <th class="mfg-col" data-tip="% of patients in low-urgency group"><span class="gh" style="color:var(--g)">L</span>%</th>
+      <th class="mfg-col" data-tip="Manufacturing / cell expansion time (days). Default: 7.">Mfg</th>
+      <th class="mfg-col" data-tip="Quality control time (days). Default: 7.">QC</th>
+      <th class="mfg-col" data-tip="Max open manufacturing facilities (out of 6). Default: 2.">Fac</th>
+      <th></th>
+    </tr></thead><tbody id="sbody"></tbody></table></div>
+  </div>
+
+  <!-- ── 3. Results Section (hidden until Run All) ── -->
+  <div id="scRes" style="display:none">
+    <!-- Comparison table -->
+    <div class="sec">
+      <div class="sh"><h3>Comparison Table</h3></div>
+      <div style="overflow-x:auto"><table class="rt" id="scTbl"><thead id="scHead"><tr>
+        <th>#</th><th>Label</th><th>N</th><th>&tau;</th><th>Status</th><th>Cost (CP-SAT)</th><th>Avg TRT</th><th>Late</th><th>Lateness</th><th>Facilities</th><th>Solve</th>
+      </tr></thead><tbody id="scBody"></tbody></table></div>
+    </div>
+
+    <!-- Charts -->
+    <div style="display:flex;justify-content:center;margin-bottom:12px">
+      <div style="display:inline-flex;background:#f3f4f6;border-radius:20px;padding:3px;border:1px solid var(--brd)">
+        <button class="vtog vtog-a" id="vtog4" onclick="setChartMode('split')">By Metric</button>
+        <button class="vtog" id="vtog1" onclick="setChartMode('single')">All-in-One</button>
+      </div>
+    </div>
+    <div class="cg" id="scCharts"></div>
+
+    <!-- Per-scenario patient decision tables -->
+    <div id="patientSections"></div>
+
+    <!-- Feasibility Boundary Chart -->
+    <div id="feasSection" style="display:none">
+      <div class="sec">
+        <div class="sh"><h3>Feasibility Boundary Analysis</h3></div>
+        <div id="feasBody" style="padding:16px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Single Run Results (hidden until Run Single) ── -->
+  <div id="singleRes" style="display:none">
+    <div id="resArea"></div>
+  </div>
+
+  </div><!-- /tp sc -->
+
+  <div class="tp" id="p-help">
+  <!-- ── Help ── -->
+  <div class="sec">
+    <div class="collapse-hdr open" id="helpHdr" onclick="toggleCollapse('help')">
+      <span class="chevron" id="helpChev" style="transform:rotate(90deg)">&#9654;</span>
+      <h3>Help &amp; Documentation</h3>
+      <div class="r"><span style="font-size:9px;color:var(--mut)">Model details, formulation, benchmarks</span></div>
+    </div>
+    <div class="collapse-body open" id="helpBody">
+      <div style="max-width:860px;margin:0 auto;padding:16px">
+
+        <!-- 1. Supply Chain Flow -->
+        <div class="sec" style="margin-bottom:14px">
+          <div class="sh"><h3>1. Supply Chain Network</h3></div>
+          <div style="padding:16px">
+            <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:12px">
+              <div style="background:var(--ac2);color:var(--ac);padding:8px 14px;border-radius:8px;font-weight:700;font-size:11px;text-align:center">Hospital<br><span style="font-size:9px;font-weight:500">h1 - h4</span></div>
+              <div style="padding:0 6px;color:var(--mut);font-size:16px">&rarr;</div>
+              <div style="background:#fef3c7;color:var(--am);padding:8px 14px;border-radius:8px;font-weight:700;font-size:11px;text-align:center">Collection<br><span style="font-size:9px;font-weight:500">c1 - c4</span></div>
+              <div style="padding:0 6px;color:var(--mut);font-size:10px;text-align:center">Transport<br>1-2d</div>
+              <div style="background:var(--rb);color:var(--r);padding:8px 14px;border-radius:8px;font-weight:700;font-size:11px;text-align:center">Manufacturing<br><span style="font-size:9px;font-weight:500">m1-m6 (max 2 open)</span></div>
+              <div style="padding:0 6px;color:var(--mut);font-size:10px;text-align:center">QC<br>7d</div>
+              <div style="padding:0 6px;color:var(--mut);font-size:10px;text-align:center">Transport<br>1-2d</div>
+              <div style="background:var(--gb);color:var(--g);padding:8px 14px;border-radius:8px;font-weight:700;font-size:11px;text-align:center">Return to<br>Hospital</div>
+            </div>
+            <div style="display:flex;justify-content:center;gap:4px;flex-wrap:wrap">
+              <div style="background:#f3f4f6;padding:4px 10px;border-radius:12px;font-size:10px;font-weight:600">Leukapheresis: 1d</div>
+              <div style="background:#f3f4f6;padding:4px 10px;border-radius:12px;font-size:10px;font-weight:600">Transport: 1-2d</div>
+              <div style="background:#f3f4f6;padding:4px 10px;border-radius:12px;font-size:10px;font-weight:600">Manufacturing: 7d</div>
+              <div style="background:#f3f4f6;padding:4px 10px;border-radius:12px;font-size:10px;font-weight:600">Quality Control: 7d</div>
+              <div style="background:var(--ac2);padding:4px 10px;border-radius:12px;font-size:10px;font-weight:700;color:var(--ac)">Min Turnaround: 17 days</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Formulation -->
+        <div class="sec" style="margin-bottom:14px">
+          <div class="sh"><h3>2. Mathematical Formulation</h3><div class="r"><span class="tag tag-b" style="font-size:9px">MILP</span></div></div>
+          <div style="padding:16px">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:10px">Minimize total supply chain cost subject to routing, capacity, and deadline constraints.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div style="background:#f8f9fb;border-radius:6px;padding:10px;border:1px solid var(--brd)">
+                <div style="font-size:9px;font-weight:700;color:var(--ac);text-transform:uppercase;margin-bottom:6px">Objective</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.6">
+                  min &Sigma;<sub>p</sub> Cost<sub>facility</sub><br>
+                  &nbsp;&nbsp;+ &Sigma;<sub>p</sub> Cost<sub>transport</sub><br>
+                  &nbsp;&nbsp;+ &Sigma;<sub>p</sub> Cost<sub>material+QC</sub><br>
+                  &nbsp;&nbsp;+ <span style="color:var(--r);font-weight:700">M</span> &times; &Sigma;<sub>p</sub> Lateness[p]
+                </div>
+              </div>
+              <div style="background:#f8f9fb;border-radius:6px;padding:10px;border:1px solid var(--brd)">
+                <div style="font-size:9px;font-weight:700;color:var(--ac);text-transform:uppercase;margin-bottom:6px">Key Constraints</div>
+                <div style="font-size:10px;line-height:1.7;color:var(--dim)">
+                  Each patient: exactly 1 route<br>
+                  Patient c<sub>i</sub> returns to h<sub>i</sub><br>
+                  Open facilities &le; MAX_FAC<br>
+                  Patients in mfg at time t &le; FCAP[m]<br>
+                  LATE[p] &ge; TRT[p] - DEADLINE[p]
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Urgency + Tau -->
+        <div class="sec" style="margin-bottom:14px">
+          <div class="sh"><h3>3. Urgency Groups &amp; Tightness Factor (&tau;)</h3></div>
+          <div style="padding:16px">
+            <div style="background:#f8f9fb;border:1px solid var(--brd);border-radius:6px;padding:10px;margin-bottom:12px;text-align:center">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">
+                DEADLINE[p] = base_due<sub>group</sub> + tolerance<sub>group</sub> &times; (1 - &tau;)
+              </div>
+              <div style="font-size:10px;color:var(--dim);margin-top:4px">&tau; = 0 (relaxed, full tolerance) &nbsp;&nbsp;&harr;&nbsp;&nbsp; &tau; = 1 (tight, zero tolerance)</div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:11px">
+              <tr style="border-bottom:2px solid var(--brd)"><th style="text-align:left;padding:6px 8px;font-size:9px;color:var(--mut)">GROUP</th><th style="padding:6px 8px;font-size:9px;color:var(--mut)">FRACTION</th><th style="padding:6px 8px;font-size:9px;color:var(--mut)">BASE DUE</th><th style="padding:6px 8px;font-size:9px;color:var(--mut)">TOLERANCE</th><th style="padding:6px 8px;font-size:9px;color:var(--mut)">&tau;=0</th><th style="padding:6px 8px;font-size:9px;color:var(--mut)">&tau;=1</th></tr>
+              <tr style="border-bottom:1px solid #f0f1f3"><td style="padding:6px 8px;font-weight:700;color:var(--r)">High</td><td style="padding:6px 8px;text-align:center">20%</td><td style="padding:6px 8px;text-align:center">16 days</td><td style="padding:6px 8px;text-align:center">1 day</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--g)">17d</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--r)">16d</td></tr>
+              <tr style="border-bottom:1px solid #f0f1f3"><td style="padding:6px 8px;font-weight:700;color:var(--am)">Medium</td><td style="padding:6px 8px;text-align:center">50%</td><td style="padding:6px 8px;text-align:center">18 days</td><td style="padding:6px 8px;text-align:center">2 days</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--g)">20d</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--g)">18d</td></tr>
+              <tr><td style="padding:6px 8px;font-weight:700;color:var(--g)">Low</td><td style="padding:6px 8px;text-align:center">30%</td><td style="padding:6px 8px;text-align:center">20 days</td><td style="padding:6px 8px;text-align:center">4 days</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--g)">24d</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--g)">20d</td></tr>
+            </table>
+            <div style="margin-top:8px;padding:6px 10px;background:var(--rb);border-radius:4px;font-size:10px;color:var(--r);font-weight:600">
+              At &tau;=1, High urgency deadline (16d) is below the physical minimum (17d) &mdash; always late by 1 day.
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Big-M -->
+        <div class="sec" style="margin-bottom:14px">
+          <div class="sh"><h3>4. Big-M Feasibility Approach</h3></div>
+          <div style="padding:16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+              <div style="background:var(--rb);border-radius:6px;padding:10px;border:1px solid #fca5a5">
+                <div style="font-size:10px;font-weight:700;color:var(--r);margin-bottom:4px">Hard Constraints (original)</div>
+                <div style="font-size:10px;color:var(--dim);line-height:1.5">TRT[p] &le; DEADLINE[p]<br>Solver crashes if any deadline can't be met<br>No information about which patients fail</div>
+              </div>
+              <div style="background:var(--gl);border-radius:6px;padding:10px;border:1px solid #6ee7b7">
+                <div style="font-size:10px;font-weight:700;color:var(--g);margin-bottom:4px">Big-M Penalty (ours)</div>
+                <div style="font-size:10px;color:var(--dim);line-height:1.5">LATE[p] &ge; TRT[p] - DEADLINE[p]<br>Always feasible (M=1,000,000 penalty)<br>Shows exactly which patients are late &amp; by how much</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Solution Approach -->
+        <div class="sec" style="margin-bottom:14px">
+          <div class="sh"><h3>5. Solution Evolution</h3><div class="r"><span class="tag tag-g" style="font-size:9px">3,500x FASTER</span></div></div>
+          <div style="padding:16px">
+
+            <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px">Step 1: Original Model (Negar Sadeghi)</div>
+            <div style="background:#f8f9fb;border-radius:6px;padding:10px;border:1px solid var(--brd);margin-bottom:10px;font-size:10px;color:var(--dim);line-height:1.6">
+              Pyomo <code>AbstractModel</code> with soft due-date penalties. Decision variables <code>Y1[p,c,m,j,t]</code> and <code>Y2[p,m,h,j,t]</code> track patient flows at every time period. Solved with Gurobi (commercial license required). The model was extended from the i-SHIPMENT formulation with patient-specific due dates.
+            </div>
+
+            <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px">Step 2: What We Tried (in order)</div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.7;margin-bottom:8px">
+              We tried <b>four different approaches</b>, one at a time, each building on lessons from the previous failure. All four solve the <b>same underlying problem</b> (same patients, same constraints, same objective). The only difference is how the solver represents and searches for the solution. Think of it like four different ways to search a phone book &mdash; the answer is the same, but some methods are faster.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr;gap:6px;margin-bottom:12px">
+              <div style="background:#f8f9fb;border-radius:6px;padding:10px;border:1px solid var(--brd);border-left:3px solid var(--r);font-size:10px">
+                <div style="font-weight:700;color:var(--r);margin-bottom:2px">Attempt 1: Original Pyomo Model (Negar's)</div>
+                <div style="color:var(--dim);line-height:1.6">Creates a binary variable for every possible (patient, facility, transport, <b>day</b>) combination. With 50 patients and 130 days, that's <b>288,000 binary variables</b>. The solver must explore an astronomical number of combinations. <b>Result: timeout</b> even after 5 minutes. Needs Gurobi (commercial, $$$).</div>
+              </div>
+              <div style="background:#f8f9fb;border-radius:6px;padding:10px;border:1px solid var(--brd);border-left:3px solid var(--am);font-size:10px">
+                <div style="font-weight:700;color:var(--am);margin-bottom:2px">Attempt 2: Time-Windowed MIP</div>
+                <div style="color:var(--dim);line-height:1.6">Same Pyomo approach, but we noticed most variables are guaranteed to be zero (a patient arriving day 50 doesn't need variables for days 1-49). So we only create variables within each patient's feasible time window. <b>10x faster</b>, solves 15 patients, but still times out at 50. Same math, fewer wasted variables.</div>
+              </div>
+              <div style="background:#f8f9fb;border-radius:6px;padding:10px;border:1px solid var(--brd);border-left:3px solid var(--am);font-size:10px">
+                <div style="font-weight:700;color:var(--am);margin-bottom:2px">Attempt 3: Two-Phase Decomposition</div>
+                <div style="color:var(--dim);line-height:1.6">Split the problem: first relax all binary variables to continuous (LP) to quickly identify the best 2 facilities. Then fix those facilities and solve only the patient routing. <b>First approach to solve 50 patients</b> (351 seconds), but the solution isn't proven optimal &mdash; we picked facilities based on an approximation.</div>
+              </div>
+              <div style="background:var(--gl);border-radius:6px;padding:10px;border:1px solid #6ee7b7;border-left:3px solid var(--g);font-size:10px">
+                <div style="font-weight:700;color:var(--g);margin-bottom:2px">Attempt 4: CP-SAT Route Reformulation (final)</div>
+                <div style="color:var(--dim);line-height:1.6">Completely different approach. Instead of tracking flows across time periods, we ask a simpler question: <b>"which route does each patient take?"</b> Each patient picks one of 24 routes (6 facilities x 2 outbound x 2 return transport). Capacity is enforced using interval scheduling. <b>50 patients in 0.1 seconds, proven optimal.</b></div>
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.6;padding:8px 10px;background:#f8f9fb;border-radius:6px;border:1px solid var(--brd);margin-bottom:12px">
+              <b>Does this change the problem?</b> No. All four approaches solve the same optimization: minimize cost, respect capacity, meet deadlines. The CP-SAT model makes one realistic assumption: patients' cells are shipped immediately after collection (no holding). This is medically correct &mdash; harvested cells degrade. But we also added a "wait" variable (0-10 days) so the solver CAN delay shipment when needed to balance facility load.
+            </div>
+
+            <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:8px">Step 3: Why CP-SAT is So Fast</div>
+            <div style="font-size:10px;color:var(--dim);line-height:1.8;margin-bottom:10px">
+              Imagine you're planning seating for a wedding dinner. The old approach (Pyomo) is like assigning each guest to a specific chair at a specific time &mdash; "Guest A sits in Chair 7 at Table 3 at 7:15 PM." That's millions of possible combinations.<br><br>
+              CP-SAT's approach is: <b>"Guest A goes to Table 3."</b> Period. Which chair and when they sit down is automatically determined by the table they're assigned to. This is 240 times fewer decisions to make.<br><br>
+              Technically, here's what happens:
+            </div>
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:10px;color:var(--dim);line-height:1.6;margin-bottom:8px;padding:0 8px">
+              <div style="font-weight:700;color:var(--ac)">1.</div><div>Each patient has <b>24 possible routes</b> (6 facilities x 2 outbound transport x 2 return transport). The solver picks exactly one.</div>
+              <div style="font-weight:700;color:var(--ac)">2.</div><div>Once a route is picked, the <b>turnaround time is known</b> (e.g., j1+m1+j1 = 17 days). No need to track individual days.</div>
+              <div style="font-weight:700;color:var(--ac)">3.</div><div>Capacity is checked using <b>interval scheduling</b>: "if Patient A and Patient B both use facility m1 and their manufacturing windows overlap, count them." The solver ensures no facility exceeds its capacity at any point in time.</div>
+              <div style="font-weight:700;color:var(--ac)">4.</div><div>CP-SAT uses <b>constraint propagation</b>: if Patient A must go to m1 (because m1 is the only open facility close enough), it immediately eliminates all other options for Patient A. This cascades, pruning the search space massively.</div>
+              <div style="font-weight:700;color:var(--ac)">5.</div><div>The solver runs on <b>all CPU cores in parallel</b>, each trying a different search strategy simultaneously.</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="background:#f8f9fb;border-radius:6px;padding:8px;border:1px solid var(--brd);text-align:center">
+                <div style="font-size:9px;color:var(--mut);text-transform:uppercase;font-weight:700">Original Variables</div>
+                <div style="font-size:22px;font-weight:800;color:var(--r)">288,000</div>
+                <div style="font-size:9px;color:var(--dim)">binary (50 patients)</div>
+              </div>
+              <div style="background:var(--gl);border-radius:6px;padding:8px;border:1px solid #6ee7b7;text-align:center">
+                <div style="font-size:9px;color:var(--mut);text-transform:uppercase;font-weight:700">CP-SAT Variables</div>
+                <div style="font-size:22px;font-weight:800;color:var(--g)">1,200</div>
+                <div style="font-size:9px;color:var(--dim)">binary (50 patients) &mdash; 240x reduction</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 6. Benchmark -->
+        <div class="sec">
+          <div class="sh"><h3>6. Performance Benchmark</h3></div>
+          <div style="padding:16px">
+            <table style="width:100%;border-collapse:collapse;font-size:11px">
+              <tr style="border-bottom:2px solid var(--brd)"><th style="text-align:left;padding:6px 8px;font-size:9px;color:var(--mut)">PATIENTS</th><th style="padding:6px 8px;font-size:9px;color:var(--mut)">HIGHS (PYOMO)</th><th style="padding:6px 8px;font-size:9px;color:var(--mut)">CP-SAT</th><th style="padding:6px 8px;font-size:9px;color:var(--mut)">SPEEDUP</th></tr>
+              <tr style="border-bottom:1px solid #f0f1f3"><td style="padding:6px 8px;font-weight:600">5</td><td style="padding:6px 8px;text-align:center">9.0s</td><td style="padding:6px 8px;text-align:center;color:var(--g);font-weight:700">0.3s</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--ac)">30x</td></tr>
+              <tr style="border-bottom:1px solid #f0f1f3"><td style="padding:6px 8px;font-weight:600">10</td><td style="padding:6px 8px;text-align:center">23s</td><td style="padding:6px 8px;text-align:center;color:var(--g);font-weight:700">0.1s</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--ac)">230x</td></tr>
+              <tr style="border-bottom:1px solid #f0f1f3"><td style="padding:6px 8px;font-weight:600">15</td><td style="padding:6px 8px;text-align:center">82s</td><td style="padding:6px 8px;text-align:center;color:var(--g);font-weight:700">0.1s</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--ac)">820x</td></tr>
+              <tr style="border-bottom:1px solid #f0f1f3"><td style="padding:6px 8px;font-weight:600">25</td><td style="padding:6px 8px;text-align:center">257s</td><td style="padding:6px 8px;text-align:center;color:var(--g);font-weight:700">0.1s</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--ac)">2,570x</td></tr>
+              <tr><td style="padding:6px 8px;font-weight:600">50</td><td style="padding:6px 8px;text-align:center;color:var(--r);font-weight:600">TIMEOUT</td><td style="padding:6px 8px;text-align:center;color:var(--g);font-weight:700">0.1s</td><td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--ac)">3,500x+</td></tr>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /tp help -->
+
+</div><!-- /page -->
+</div><!-- /main-content -->
+</div><!-- /layout -->
+
+<div class="toast" id="toast"></div>
+<div class="popup-ov" id="popupOv" onclick="if(event.target===this)closePopup()">
+  <div class="popup" id="popup">
+    <button class="popup-close" onclick="closePopup()">&times;</button>
+    <div class="popup-head"><h3 id="popTitle">Results</h3></div>
+    <div class="popup-body" id="popBody"></div>
+  </div>
+</div>
+
+<script>
+const API='http://localhost:5050/api';
+const CL=['#5b8def','#e8786a','#5bb890','#e8a84c','#9b7ed8','#56b5c4','#d474a0','#8eb85b','#d4885b','#7b82d4'];
+let sId=0;
+let mfgVisible=false;
+
+// ── Sidebar toggle ──
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ── Tabs ──
+function mt(n){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('a',t.dataset.t===n));
+  document.querySelectorAll('.tp').forEach(t=>t.classList.toggle('a',t.id==='p-'+n));
+}
+
+// ── Collapsible sections ──
+function toggleCollapse(name){
+  const hdr=document.getElementById(name+'Hdr');
+  const body=document.getElementById(name+'Body');
+  body.classList.toggle('open');
+  hdr.classList.toggle('open');
+}
+
+// ── Toggle mfg columns ──
+function toggleMfgCols(){
+  mfgVisible=!mfgVisible;
+  document.querySelectorAll('.mfg-col').forEach(el=>el.classList.toggle('show',mfgVisible));
+  document.querySelectorAll('.mfg-td').forEach(el=>el.classList.toggle('show',mfgVisible));
+  document.getElementById('mfgTogBtn').textContent=mfgVisible?'Hide Mfg':'Show Mfg';
+}
+
+// ── Settings helpers ──
+function uTau(){
+  const t=+document.getElementById('ts').value;
+  document.getElementById('tN').value=t;
+  const mf=+document.getElementById('pM').value,qc=+document.getElementById('pQ').value;
+  const mn=1+1+mf+qc+1;
+  document.getElementById('minN').innerHTML=`Min TRT: <b>${mn}d</b> (1+1+${mf}+${qc}+1)`;
+  [['h',mn],['m',mn],['l',mn]].forEach(([k,m])=>{
+    const d=+document.getElementById('u'+k+'d').value,tl=+document.getElementById('u'+k+'t').value;
+    const e=d+tl*(1-t),el=document.getElementById('u'+k+'e');
+    el.textContent=e.toFixed(1);el.className='eff '+(e<m?'eff-w':'eff-o');
+  });
+}
+function gUrg(){return{high:{fraction:+V('uhf')/100,base_due:+V('uhd'),tolerance:+V('uht')},medium:{fraction:+V('umf')/100,base_due:+V('umd'),tolerance:+V('umt')},low:{fraction:+V('ulf')/100,base_due:+V('uld'),tolerance:+V('ult')}}}
+function gPrc(){return{tls:1,tmfe:+V('pM'),tqc:+V('pQ'),max_facilities:+V('pF')}}
+function V(id){return document.getElementById(id).value}
+
+// ── Single Run ──
+async function runSingle(){
+  const b=document.getElementById('bRun');b.disabled=true;b.innerHTML='<span class="sp"></span> Solving';
+  SP('a','Solving');
+  progOn('Solving '+V('sN')+' patients, \u03C4='+V('ts')+'...');
+  try{
+    const r=await(await fetch(API+'/run',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({n:+V('sN'),tau:+V('ts'),urgency:gUrg(),process:gPrc()})})).json();
+    showSingle(r);toast(r.solved?`Solved in ${r.solve_time}s`:'Failed',!r.solved);
+  }catch(e){toast('Error: '+e.message,1)}
+  progOff();b.disabled=false;b.innerHTML='Run Single Experiment';SP('g','Ready');
+}
+
+function showSingle(r){
+  document.getElementById('scRes').style.display='none';
+  const wrap=document.getElementById('singleRes');wrap.style.display='';
+  const a=document.getElementById('resArea');
+  if(!r.solved){a.innerHTML=`<div class="sec"><div style="padding:20px;color:var(--r);font-weight:700">Solver failed: ${r.error||r.termination||'unknown'}</div></div>`;return}
+  const sc=r.all_on_time?'var(--g)':'var(--r)',st=r.all_on_time?'All On Time':r.num_late+' Late';
+  const gc={high:'#dc2626',medium:'#d97706',low:'#059669'};
+  let h=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px">
+    ${mc(st,sc,'Status')}${mc('$'+(r.real_cost/1000).toFixed(0)+'K','var(--tx)','Cost')}${mc(r.avg_trt.toFixed(1)+'d','var(--cy)','Avg TRT')}
+    ${mc(r.total_lateness+'d',r.total_lateness>0?'var(--r)':'var(--g)','Lateness')}${mc((r.min_trt||'?')+'d','var(--dim)','Min TRT')}
+    ${mc(r.build_time+'s / '+r.solve_time+'s','var(--dim)','Build / Solve')}${mc(r.optimal?'Yes':'No','var(--ac)','Optimal')}
+  </div>`;
+  // Group bars
+  if(r.group_summary){h+=`<div class="sec"><div class="sh"><h3>Group Performance</h3></div><div style="padding:12px">`;
+    ['high','medium','low'].forEach(g=>{const s=r.group_summary[g];if(!s)return;
+      const p=Math.min(s.avg_trt/30*100,100),dp=Math.min(s.deadline/30*100,100),c=gc[g];
+      const lt=s.num_late>0?`<span style="color:var(--r)">${s.num_late} late</span>`:'<span style="color:var(--g)">on time</span>';
+      h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:50px;font-size:10px;font-weight:700;color:${c};text-transform:capitalize">${g}</div>
+        <div style="flex:1;height:18px;background:#f3f4f6;border-radius:4px;position:relative;overflow:visible">
+          <div style="height:100%;width:${p}%;background:linear-gradient(90deg,${c}00,${c}44 12%,${c} 25%);border-radius:4px;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;font-weight:700">${s.avg_trt.toFixed(1)}d</div>
+          <div style="position:absolute;top:-2px;height:calc(100% + 4px);width:2px;left:${dp}%;background:${c};border-radius:1px;opacity:.4"></div>
+        </div>
+        <div style="width:55px;font-size:9px;font-weight:600;color:${c}">DL=${s.deadline}d</div>
+        <div style="width:50px;font-size:9px;text-align:right">${lt}</div>
+      </div>`});
+    h+=`</div></div>`}
+  // Facilities
+  h+=`<div class="sec"><div class="sh"><h3>Facilities</h3></div><div style="padding:10px 14px;font-size:12px"><b>${(r.facilities_open||[]).join(', ')}</b> <span style="color:var(--dim)">(${(r.facilities_open||[]).length} of 6)</span></div></div>`;
+  // Patient table (collapsible)
+  if(r.patients){
+    h+=`<div class="sec">
+      <div class="patient-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span class="pchev">&#9654;</span> Patient Decisions (${r.patients.length} patients)
+      </div>
+      <div class="patient-body"><table class="rt"><thead><tr><th>ID</th><th>Group</th><th>Arrive</th><th>Facility</th><th>Trans Out</th><th>Trans Ret</th><th>Wait</th><th>TRT</th><th>DL</th><th>Late</th><th>Status</th></tr></thead><tbody>`;
+    r.patients.forEach(p=>{h+=`<tr><td>${p.id}</td><td style="color:${gc[p.group]||'inherit'};font-weight:600">${p.group}</td><td>${p.arrival_day}</td><td style="font-weight:600">${p.facility||'?'}</td><td>${p.transport_out||'?'}</td><td>${p.transport_ret||'?'}</td><td${p.wait>0?' style="color:var(--am);font-weight:600"':''}>${p.wait||0}d</td><td>${p.turnaround}</td><td>${p.deadline}</td><td class="${p.lateness>0?'vr':'vg'}">${p.lateness}</td><td class="${p.on_time?'vg':'vr'}">${p.on_time?'On time':'Late'}</td></tr>`});
+    h+=`</tbody></table></div></div>`}
+  a.innerHTML=h;
+}
+function mc(v,c,l){return`<div style="background:#fff;border:1px solid var(--brd);border-radius:var(--rad);padding:12px 10px;text-align:center;box-shadow:var(--sh)"><div style="font-size:20px;font-weight:800;color:${c};font-variant-numeric:tabular-nums;line-height:1.2">${v}</div><div style="font-size:8px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.3px;margin-top:3px">${l}</div></div>`}
+
+// ── Scenarios ──
+function addSc(c={}){
+  const id=sId++;
+  const d={label:c.label||'S'+(id+1),n:c.n||25,tau:c.tau??0,hd:c.hd||16,ht:c.ht||1,hp:c.hp||20,md:c.md||18,mt:c.mt||2,mp:c.mp||50,ld:c.ld||20,lt:c.lt||4,lp:c.lp||30,tmfe:c.tmfe||7,tqc:c.tqc||7,fac:c.fac||2};
+  const cl=CL[id%CL.length];
+  const mfgCls=mfgVisible?'mfg-col mfg-td show':'mfg-col mfg-td';
+  const tr=document.createElement('tr');tr.id='r'+id;
+  tr.innerHTML=`<td><span class="cd" style="background:${cl}"></span></td>
+    <td class="lc"><input value="${d.label}" data-f="label"></td>
+    <td><input type="number" value="${d.n}" data-f="n" min="5" max="50" step="5"></td>
+    <td><input type="number" value="${d.tau}" data-f="tau" min="0" max="1" step="0.1"></td>
+    <td class="${mfgCls}"><input type="number" value="${d.hd}" data-f="hd"></td><td class="${mfgCls}"><input type="number" value="${d.ht}" data-f="ht"></td><td class="${mfgCls}"><input type="number" value="${d.hp}" data-f="hp"></td>
+    <td class="${mfgCls}"><input type="number" value="${d.md}" data-f="md"></td><td class="${mfgCls}"><input type="number" value="${d.mt}" data-f="mt"></td><td class="${mfgCls}"><input type="number" value="${d.mp}" data-f="mp"></td>
+    <td class="${mfgCls}"><input type="number" value="${d.ld}" data-f="ld"></td><td class="${mfgCls}"><input type="number" value="${d.lt}" data-f="lt"></td><td class="${mfgCls}"><input type="number" value="${d.lp}" data-f="lp"></td>
+    <td class="${mfgCls}"><input type="number" value="${d.tmfe}" data-f="tmfe"></td><td class="${mfgCls}"><input type="number" value="${d.tqc}" data-f="tqc"></td>
+    <td class="${mfgCls}"><input type="number" value="${d.fac}" data-f="fac" min="1" max="6"></td>
+    <td><button class="dbtn" onclick="this.closest('tr').remove()">&times;</button></td>`;
+  document.getElementById('sbody').appendChild(tr);
+}
+
+function pre(n){
+  document.getElementById('sbody').innerHTML='';sId=0;
+  const P={
+    base:[{label:'Baseline',n:25}],
+    tau:[{label:'Relaxed',tau:0},{label:'Moderate',tau:0.3},{label:'Tight',tau:0.6},{label:'Extreme',tau:1.0}],
+    scale:[{label:'5p',n:5},{label:'15p',n:15},{label:'25p',n:25},{label:'50p',n:50}],
+    tech:[{label:'Current'},{label:'Fast QC',tqc:5},{label:'Fast Mfg',tmfe:5},{label:'Both Fast',tmfe:5,tqc:5},{label:'3 Fac',fac:3}],
+    doe:[{label:'Base'},{label:'Tight',tau:0.5},{label:'50p',n:50},{label:'50p+Tight',n:50,tau:0.5},{label:'Fast QC',tqc:5},{label:'Fast+Tight',tau:0.5,tmfe:5,tqc:5}],
+  };(P[n]||P.base).forEach(c=>addSc(c));
+}
+
+// Store results globally for patient tables
+let lastResults=null;
+let lastBmData=null;
+let chartMode='split';
+
+function setChartMode(m){
+  chartMode=m;
+  document.getElementById('vtog4').classList.toggle('vtog-a',m==='split');
+  document.getElementById('vtog1').classList.toggle('vtog-a',m==='single');
+  if(lastResults)renderCharts(lastResults.filter(r=>r.solved),lastBmData);
+}
+
+async function runAll(){
+  const rows=[...document.querySelectorAll('#sbody tr')];
+  if(!rows.length){toast('Add scenarios first',1);return}
+  const btn=document.getElementById('bAll');btn.disabled=true;
+  const withBm=document.getElementById('bmToggle').checked;
+  const totalSteps=withBm?3:2;
+
+  SP('a','Running');
+  progOn('Preparing data...',totalSteps);
+
+  const scens=rows.map((tr,i)=>{
+    const g=f=>tr.querySelector(`[data-f="${f}"]`).value;const n=f=>+g(f);
+    return{idx:i,label:g('label'),n:n('n'),tau:n('tau'),
+      urgency:{high:{fraction:n('hp')/100,base_due:n('hd'),tolerance:n('ht')},medium:{fraction:n('mp')/100,base_due:n('md'),tolerance:n('mt')},low:{fraction:n('lp')/100,base_due:n('ld'),tolerance:n('lt')}},
+      process:{tls:1,tmfe:n('tmfe'),tqc:n('tqc'),max_facilities:n('fac')}};
+  });
+
+  try{
+    // Step 1: Run CP-SAT scenarios
+    progStep(0,totalSteps,`Solving ${scens.length} scenarios (CP-SAT)...`);
+    btn.innerHTML=`<span class="sp"></span> CP-SAT ${scens.length}`;
+    const res=await(await fetch(API+'/scenarios',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({scenarios:scens})})).json();
+    res.forEach((r,i)=>{r._color=CL[i%CL.length];r._label=scens[i].label;r._n=scens[i].n;r._tau=scens[i].tau});
+
+    // Step 2 (optional): HiGHS baseline
+    let bmData=null;
+    if(withBm){
+      progStep(1,totalSteps,'Running HiGHS baseline (this takes a while)...');
+      btn.innerHTML=`<span class="sp"></span> HiGHS`;
+      try{
+        const sizes=[...new Set(scens.map(s=>s.n))].filter(n=>n<=25);
+        const bmRes=await(await fetch(API+'/benchmark',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({sizes,tau:0})})).json();
+        const bmMap={};bmRes.forEach(b=>{if(b.highs?.solved)bmMap[b.n]=b.highs});
+        bmData=res.map(r=>bmMap[r.num_patients]||null);
+      }catch(e){/* ignore benchmark errors */}
+    }
+
+    // Final step: Render
+    progStep(totalSteps-1,totalSteps,'Rendering results...');
+    lastResults=res;
+    showScenarios(res,bmData);
+    toast(`${scens.length} scenarios complete`);
+  }catch(e){toast('Error: '+e.message,1)}
+  progOff();btn.disabled=false;btn.innerHTML='Run All';SP('g','Ready');
+}
+
+function showScenarios(R,bmData){
+  document.getElementById('singleRes').style.display='none';
+  document.getElementById('scRes').style.display='';
+  // Table
+  const hasBm=bmData&&bmData.some(b=>b);
+  const headExtra=hasBm?'<th>HiGHS Cost</th><th>HiGHS TRT</th><th>HiGHS Late</th><th>HiGHS Time</th><th>Note</th>':'';
+  document.getElementById('scHead').innerHTML=`<tr><th>#</th><th>Label</th><th>N</th><th>&tau;</th><th>Status</th><th>Cost</th><th>TRT</th><th>Late</th><th>Fac</th><th>Time</th><th></th>${headExtra}</tr>`;
+  document.getElementById('scBody').innerHTML=R.map((r,i)=>{
+    if(!r.solved)return`<tr><td><span class="cd" style="background:${r._color}"></span></td><td>${r._label}</td><td>${r._n}</td><td>${r._tau}</td><td class="vr">FAIL</td><td colspan="${hasBm?7:5}">${r.error||r.termination||'---'}</td></tr>`;
+    const bm=bmData?bmData[i]:null;
+    return`<tr><td><span class="cd" style="background:${r._color}"></span></td><td style="font-weight:700">${r._label}</td><td>${r.num_patients}</td><td>${r.tau}</td>
+      <td class="${r.all_on_time?'vg':'vr'}">${r.all_on_time?'On Time':r.num_late+' Late'}</td>
+      <td class="vb">$${(r.real_cost/1000).toFixed(0)}K</td><td>${r.avg_trt.toFixed(1)}d</td>
+      <td class="${r.num_late?'vr':''}">${r.num_late}</td>
+      <td>${(r.facilities_open||[]).join(',')}</td><td>${r.solve_time}s</td>
+      <td><button class="pop-btn" onclick="showPopup(${i})" title="View details">&#x1F4CA;</button></td>
+      ${hasBm?`<td style="color:var(--am);font-weight:600">${bm?'$'+(bm.cost/1000).toFixed(0)+'K':'---'}</td>
+        <td>${bm?bm.avg_trt.toFixed(1)+'d':'---'}</td>
+        <td class="${bm&&bm.num_late?'vr':''}">${bm?bm.num_late:'---'}</td>
+        <td>${bm?bm.solve_time+'s':'---'}</td>`:''}</tr>`}).join('');
+
+  // Charts
+  const S=R.filter(r=>r.solved);
+  const Si=R.map((r,i)=>r.solved?i:-1).filter(i=>i>=0);
+  lastBmData=bmData;
+  if(!S.length){document.getElementById('scCharts').innerHTML='';document.getElementById('patientSections').innerHTML='';return}
+  renderCharts(S,bmData?Si.map(i=>bmData[i]||null):null);
+
+  // Per-scenario patient decision tables
+  const gc={high:'#dc2626',medium:'#d97706',low:'#059669'};
+  let ptHtml='';
+  S.forEach((r,si)=>{
+    if(!r.patients||!r.patients.length)return;
+    ptHtml+=`<div class="sec">
+      <div class="patient-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <span class="pchev">&#9654;</span>
+        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${r._color};margin:0 4px;border:2px solid #fff;box-shadow:0 0 0 1px var(--brd)"></span>
+        ${r._label} &mdash; Patient Decisions (${r.patients.length} patients)
+      </div>
+      <div class="patient-body"><table class="rt"><thead><tr><th>ID</th><th>Group</th><th>Arrive</th><th>Facility</th><th>Trans Out</th><th>Trans Ret</th><th>Wait</th><th>TRT</th><th>DL</th><th>Late</th><th>Status</th></tr></thead><tbody>`;
+    r.patients.forEach(p=>{
+      ptHtml+=`<tr><td>${p.id}</td><td style="color:${gc[p.group]||'inherit'};font-weight:600">${p.group}</td><td>${p.arrival_day}</td><td style="font-weight:600">${p.facility||'?'}</td><td>${p.transport_out||'?'}</td><td>${p.transport_ret||'?'}</td><td${p.wait>0?' style="color:var(--am);font-weight:600"':''}>${p.wait||0}d</td><td>${p.turnaround}</td><td>${p.deadline}</td><td class="${p.lateness>0?'vr':'vg'}">${p.lateness}</td><td class="${p.on_time?'vg':'vr'}">${p.on_time?'On time':'Late'}</td></tr>`;
+    });
+    ptHtml+=`</tbody></table></div></div>`;
+  });
+  document.getElementById('patientSections').innerHTML=ptHtml;
+}
+
+const METRICS={
+  cost:{label:'Total Cost',fmt:r=>'$'+(r.real_cost/1000).toFixed(0)+'K',val:r=>r.real_cost,bm:b=>b?.cost||null},
+  trt:{label:'Avg Turnaround',fmt:r=>r.avg_trt.toFixed(1)+'d',val:r=>r.avg_trt,bm:b=>b?.avg_trt||null},
+  late:{label:'Total Lateness',fmt:r=>r.total_lateness.toFixed(1)+'d',val:r=>r.total_lateness,bm:b=>null},
+  ontime:{label:'On-Time Rate',fmt:r=>((r.num_patients-r.num_late)/r.num_patients*100).toFixed(0)+'%',val:r=>(r.num_patients-r.num_late)/r.num_patients*100,bm:b=>null},
+};
+
+function renderCharts(S,bmRaw){
+  if(chartMode==='single'){
+    document.getElementById('scCharts').innerHTML=stackedChart(S,bmRaw);
+  }else{
+    const bmCosts=bmRaw?bmRaw.map(b=>b?.cost||null):null;
+    const bmTrt=bmRaw?bmRaw.map(b=>b?.avg_trt||null):null;
+    document.getElementById('scCharts').innerHTML=
+      bChart('Total Cost',S,METRICS.cost.fmt,METRICS.cost.val,bmCosts)+
+      bChart('Avg Turnaround',S,METRICS.trt.fmt,METRICS.trt.val,bmTrt)+
+      bChart('Total Lateness',S,METRICS.late.fmt,METRICS.late.val,null)+
+      bChart('On-Time Rate',S,METRICS.ontime.fmt,METRICS.ontime.val,null);
+  }
+}
+
+function stackedChart(data,bmRaw){
+  const mList=[
+    {label:'Cost',raw:r=>r.real_cost,fmt:r=>'$'+(r.real_cost/1000).toFixed(0)+'K',col:'#5b8def'},
+    {label:'TRT',raw:r=>r.avg_trt,fmt:r=>r.avg_trt.toFixed(1)+'d',col:'#56b5c4'},
+    {label:'Lateness',raw:r=>r.total_lateness,fmt:r=>r.total_lateness.toFixed(1)+'d',col:'#e8786a'},
+    {label:'On-Time',raw:r=>(r.num_patients-r.num_late)/r.num_patients*100,fmt:r=>((r.num_patients-r.num_late)/r.num_patients*100).toFixed(0)+'%',col:'#5bb890'},
+  ];
+  const maxes=mList.map(m=>Math.max(...data.map(m.raw),.01));
+
+  let cols=data.map(r=>{
+    // Each metric gets 25% of bar, scaled by its value vs max
+    const segs=mList.map((m,j)=>{
+      const pct=Math.max(m.raw(r)/maxes[j]*25,1); // 0-25% each
+      return`<div style="width:100%;flex:0 0 ${pct}%;background:${m.col};cursor:pointer;transition:opacity .15s;position:relative" title="${m.label}: ${m.fmt(r)}"
+        onmouseenter="this.style.opacity='0.7'" onmouseleave="this.style.opacity='1'"></div>`;
+    }).join('');
+    const tip=mList.map(m=>`${m.label}: ${m.fmt(r)}`).join(' | ');
+    return`<div style="flex:1;min-width:70px;max-width:130px;display:flex;flex-direction:column;align-items:center;gap:3px;height:220px">
+      <div style="font-size:8px;font-weight:700;color:${r._color};white-space:nowrap">${mList[0].fmt(r)}</div>
+      <div style="width:44px;flex:1;border-radius:6px 6px 0 0;overflow:hidden;display:flex;flex-direction:column-reverse;border:1px solid rgba(0,0,0,.06);box-shadow:0 2px 8px rgba(0,0,0,.04)" title="${tip}">
+        ${segs}
+      </div>
+    </div>`;
+  }).join('');
+
+  let labels=data.map(r=>`<div style="flex:1;min-width:70px;max-width:130px;text-align:center;font-size:9px;font-weight:600;color:var(--dim);padding-top:5px">${r._label}</div>`).join('');
+  let legend=mList.map(m=>`<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:3px;background:${m.col}"></span><span style="font-size:9px;font-weight:600;color:var(--dim)">${m.label}</span></span>`).join('<span style="width:12px"></span>');
+
+  return`<div class="cc" style="grid-column:1/-1">
+    <h4 style="text-align:center">Stacked Metrics Comparison</h4>
+    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px">${legend}</div>
+    <div style="display:flex;justify-content:center;gap:24px;padding:0 20px">${cols}</div>
+    <div style="display:flex;justify-content:center;gap:24px;padding:0 20px;border-top:1.5px solid var(--brd)">${labels}</div>
+  </div>`;
+}
+
+function bChart(title,data,fmt,val,bmData){
+  const vs=data.map(val);
+  let allVals=[...vs];
+  if(bmData) bmData.forEach(b=>{if(b!==null&&b!==undefined)allVals.push(b)});
+  const mx=Math.max(...allVals,.01);
+  const hasBm=bmData&&bmData.some(b=>b!==null&&b!==undefined);
+
+  let bars=data.map((r,i)=>{
+    const v=val(r),pct=Math.max(v/mx*100,1),c=r._color;
+    const grad=`linear-gradient(to bottom, ${c} 0%, ${c}88 40%, ${c}33 75%, ${c}10 100%)`;
+    // HiGHS as a second thinner bar next to CP-SAT
+    let bmBar='';
+    if(hasBm&&bmData[i]!==null&&bmData[i]!==undefined){
+      const bv=bmData[i];
+      const bPct=Math.max(bv/mx*100,1);
+      bmBar=`<div class="col-bar" style="height:${bPct}%;background:linear-gradient(to bottom,var(--am) 0%,#e8a84c88 40%,#e8a84c33 75%,#e8a84c10 100%);width:35%;border-radius:4px 4px 0 0;position:relative;border:1px solid rgba(255,255,255,.3);border-bottom:none;flex-shrink:0"></div>`;
+    }
+    return`<div class="col-wrap" style="position:relative">
+      <div style="font-size:7px;font-weight:700;color:${c};white-space:nowrap;margin-bottom:2px">${fmt(r)}</div>
+      <div style="display:flex;align-items:flex-end;gap:2px;height:100%;width:100%;justify-content:center">
+        <div class="col-bar" style="height:${pct}%;background:${grad};width:${hasBm?'45%':'55%'};border-radius:4px 4px 0 0;position:relative;border:1px solid rgba(255,255,255,.3);border-bottom:none;flex-shrink:0"></div>
+        ${bmBar}
+      </div>
+    </div>`}).join('');
+  let lbls=data.map(r=>`<div class="col-lbl">${r._label}</div>`).join('');
+  let legend=hasBm?`<div style="display:flex;gap:10px;justify-content:center;margin-top:8px;font-size:8px;font-weight:600;color:var(--dim)"><span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--ac);vertical-align:middle;margin-right:3px"></span>CP-SAT</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--am);vertical-align:middle;margin-right:3px"></span>HiGHS</span></div>`:'';
+  return`<div class="cc"><h4>${title}</h4><div class="col-area"><div class="col-chart">${bars}</div><div class="col-axis">${lbls}</div></div>${legend}</div>`;
+}
+
+// ── Progress (bottom-right widget) ──
+function progOn(msg,steps){
+  document.getElementById('pw').classList.add('on');
+  document.getElementById('pwMsg').textContent=msg;
+  if(steps){
+    document.getElementById('pwDots').innerHTML=Array.from({length:steps},(_,i)=>`<span class="pw-dot" id="pd${i}"></span>`).join('');
+    document.getElementById('pwFill').className='pw-fill';
+    document.getElementById('pwFill').style.width='0%';
+  }else{
+    document.getElementById('pwDots').innerHTML='';
+    document.getElementById('pwFill').className='pw-fill pw-pulse';
+  }
+}
+function progStep(i,total,msg){
+  document.getElementById('pwFill').className='pw-fill';
+  document.getElementById('pwFill').style.width=((i+1)/total*100)+'%';
+  if(msg)document.getElementById('pwMsg').textContent=msg;
+  for(let j=0;j<total;j++){
+    const d=document.getElementById('pd'+j);
+    if(d)d.className='pw-dot'+(j<i?' done':j===i?' active':'');
+  }
+}
+function progOff(){
+  document.getElementById('pw').classList.remove('on');
+  document.getElementById('pwFill').className='pw-fill';
+}
+
+// ── Utils ──
+function SP(t,x){const p=document.getElementById('pill');p.className='pill pill-'+t;p.textContent=x}
+function toast(m,e){const t=document.getElementById('toast');t.textContent=m;t.style.borderColor=e?'var(--r)':'var(--g)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+
+// ── Result Popup ──
+function showPopup(idx){
+  const r=lastResults[idx];if(!r||!r.solved)return;
+  const c=r._color||CL[idx%CL.length];
+  document.getElementById('popTitle').innerHTML=`<span class="cd" style="background:${c};margin-right:6px"></span>${r._label} &mdash; Results`;
+
+  const gc={high:'var(--r)',medium:'var(--am)',low:'var(--g)'};
+  const otPct=((r.num_patients-r.num_late)/r.num_patients*100).toFixed(0);
+
+  let h=`<div class="pm-grid">
+    <div class="pm"><div class="pv" style="color:${r.all_on_time?'var(--g)':'var(--r)'}">${r.all_on_time?'On Time':r.num_late+' Late'}</div><div class="pl">Status</div></div>
+    <div class="pm"><div class="pv">$${(r.real_cost/1000).toFixed(0)}K</div><div class="pl">Total Cost</div></div>
+    <div class="pm"><div class="pv">${r.avg_trt.toFixed(1)}d</div><div class="pl">Avg TRT</div></div>
+    <div class="pm"><div class="pv" style="color:var(--g)">${otPct}%</div><div class="pl">On-Time Rate</div></div>
+    <div class="pm"><div class="pv">${r.num_patients}</div><div class="pl">Patients</div></div>
+    <div class="pm"><div class="pv" style="color:var(--ac)">${r.solve_time}s</div><div class="pl">Solve Time</div></div>
+  </div>`;
+
+  // Group performance bars
+  h+=`<div style="font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;margin-bottom:6px">Group Performance</div>`;
+  ['high','medium','low'].forEach(g=>{
+    const s=r.group_summary?.[g];if(!s)return;
+    const pct=Math.min(s.avg_trt/30*100,100);
+    const col=gc[g];
+    h+=`<div class="pm-bar"><div class="pm-bar-label" style="color:${col}">${g}</div>
+      <div class="pm-bar-track"><div class="pm-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      <div style="width:40px;font-size:9px;font-weight:700;text-align:right">${s.avg_trt.toFixed(1)}d</div>
+      <div style="width:30px;font-size:8px;color:var(--dim)">/${s.deadline}d</div></div>`;
+  });
+
+  // Facilities
+  h+=`<div style="margin-top:10px;font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;margin-bottom:4px">Facilities Open</div>`;
+  h+=`<div style="display:flex;gap:4px;margin-bottom:10px">`;
+  ['m1','m2','m3','m4','m5','m6'].forEach(m=>{
+    const open=(r.facilities_open||[]).includes(m);
+    h+=`<div style="width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;
+      ${open?'background:var(--ac2);color:var(--ac);border:1px solid var(--ac)':'background:#f3f4f6;color:var(--mut);border:1px solid var(--brd)'}">${m}</div>`;
+  });
+  h+=`</div>`;
+
+  // Network Flow Diagram
+  h+=`<div style="font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;margin:10px 0 6px">Patient &rarr; Facility Network</div>`;
+  if(r.patients){
+    // Group patients by facility
+    const facGroups={};
+    r.patients.forEach(p=>{
+      const f=p.facility||'?';
+      if(!facGroups[f])facGroups[f]={j1_out:0,j2_out:0,j1_ret:0,j2_ret:0,patients:[],groups:{high:0,medium:0,low:0}};
+      facGroups[f].patients.push(p);
+      facGroups[f].groups[p.group]=(facGroups[f].groups[p.group]||0)+1;
+      if(p.transport_out==='j1')facGroups[f].j1_out++;else facGroups[f].j2_out++;
+      if(p.transport_ret==='j1')facGroups[f].j1_ret++;else facGroups[f].j2_ret++;
+    });
+    const facs=Object.keys(facGroups).sort();
+    const W=400,facH=facs.length*70+20;
+
+    let svg=`<svg viewBox="0 0 ${W} ${facH}" style="width:100%;height:${facH}px">`;
+    // Defs
+    svg+=`<defs><marker id="ah" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#c4c9d4"/></marker></defs>`;
+
+    const pX=20,fX=180,tX=340; // patient col, facility col, transport col
+    let y=20;
+
+    facs.forEach(f=>{
+      const fg=facGroups[f];
+      const n=fg.patients.length;
+      const hCount=fg.groups.high||0,mCount=fg.groups.medium||0,lCount=fg.groups.low||0;
+
+      // Facility node (center)
+      svg+=`<rect x="${fX}" y="${y}" width="50" height="36" rx="6" fill="var(--ac2)" stroke="var(--ac)" stroke-width="1.5"/>`;
+      svg+=`<text x="${fX+25}" y="${y+15}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ac)" font-family="Inter">${f}</text>`;
+      svg+=`<text x="${fX+25}" y="${y+28}" text-anchor="middle" font-size="8" fill="var(--dim)" font-family="Inter">${n} patients</text>`;
+
+      // Patient groups (left side)
+      let py=y;
+      if(hCount>0){
+        svg+=`<rect x="${pX}" y="${py}" width="40" height="14" rx="3" fill="var(--rb)"/>`;
+        svg+=`<text x="${pX+20}" y="${py+10}" text-anchor="middle" font-size="7" font-weight="700" fill="var(--r)" font-family="Inter">H:${hCount}</text>`;
+        svg+=`<line x1="${pX+40}" y1="${py+7}" x2="${fX}" y2="${y+18}" stroke="var(--r)" stroke-width="1" opacity=".4" marker-end="url(#ah)"/>`;
+        py+=16;
+      }
+      if(mCount>0){
+        svg+=`<rect x="${pX}" y="${py}" width="40" height="14" rx="3" fill="var(--ab)"/>`;
+        svg+=`<text x="${pX+20}" y="${py+10}" text-anchor="middle" font-size="7" font-weight="700" fill="var(--am)" font-family="Inter">M:${mCount}</text>`;
+        svg+=`<line x1="${pX+40}" y1="${py+7}" x2="${fX}" y2="${y+18}" stroke="var(--am)" stroke-width="1" opacity=".4" marker-end="url(#ah)"/>`;
+        py+=16;
+      }
+      if(lCount>0){
+        svg+=`<rect x="${pX}" y="${py}" width="40" height="14" rx="3" fill="var(--gb)"/>`;
+        svg+=`<text x="${pX+20}" y="${py+10}" text-anchor="middle" font-size="7" font-weight="700" fill="var(--g)" font-family="Inter">L:${lCount}</text>`;
+        svg+=`<line x1="${pX+40}" y1="${py+7}" x2="${fX}" y2="${y+18}" stroke="var(--g)" stroke-width="1" opacity=".4" marker-end="url(#ah)"/>`;
+      }
+
+      // Transport (right side)
+      let ty=y;
+      if(fg.j1_out>0){
+        svg+=`<rect x="${tX}" y="${ty}" width="50" height="14" rx="3" fill="#f3f4f6" stroke="var(--brd)"/>`;
+        svg+=`<text x="${tX+25}" y="${ty+10}" text-anchor="middle" font-size="7" font-weight="600" fill="var(--dim)" font-family="Inter">j1: ${fg.j1_out}p</text>`;
+        svg+=`<line x1="${fX+50}" y1="${y+18}" x2="${tX}" y2="${ty+7}" stroke="#c4c9d4" stroke-width="1" marker-end="url(#ah)"/>`;
+        ty+=16;
+      }
+      if(fg.j2_out>0){
+        svg+=`<rect x="${tX}" y="${ty}" width="50" height="14" rx="3" fill="#f3f4f6" stroke="var(--brd)"/>`;
+        svg+=`<text x="${tX+25}" y="${ty+10}" text-anchor="middle" font-size="7" font-weight="600" fill="var(--dim)" font-family="Inter">j2: ${fg.j2_out}p</text>`;
+        svg+=`<line x1="${fX+50}" y1="${y+18}" x2="${tX}" y2="${ty+7}" stroke="#c4c9d4" stroke-width="1" marker-end="url(#ah)"/>`;
+      }
+
+      // Column headers (only first)
+      if(f===facs[0]){
+        svg+=`<text x="${pX+20}" y="${y-6}" text-anchor="middle" font-size="7" font-weight="700" fill="var(--mut)" font-family="Inter">PATIENTS</text>`;
+        svg+=`<text x="${fX+25}" y="${y-6}" text-anchor="middle" font-size="7" font-weight="700" fill="var(--mut)" font-family="Inter">FACILITY</text>`;
+        svg+=`<text x="${tX+25}" y="${y-6}" text-anchor="middle" font-size="7" font-weight="700" fill="var(--mut)" font-family="Inter">TRANSPORT</text>`;
+      }
+
+      y+=70;
+    });
+    svg+=`</svg>`;
+    h+=svg;
+  }
+
+  document.getElementById('popBody').innerHTML=h;
+  document.getElementById('popupOv').classList.add('show');
+}
+function closePopup(){document.getElementById('popupOv').classList.remove('show')}
+
+// ── Feasibility Boundary ──
+async function runFeasibility(){
+  const n=+document.getElementById('sN')?.value||25;
+  SP('a','Feasibility');progOn('Sweeping tau for feasibility boundary...');
+  try{
+    const res=await(await fetch(API+'/feasibility',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({n,steps:21})})).json();
+    showFeasibility(res);
+    toast('Feasibility analysis complete');
+  }catch(e){toast('Error: '+e.message,1)}
+  progOff();SP('g','Ready');
+}
+
+function showFeasibility(data){
+  document.getElementById('feasSection').style.display='';
+  const R=data.results||[];
+  const bTau=data.boundary_tau;
+  const fTau=data.first_late_tau;
+
+  const W=600,H=220,pad={t:30,r:20,b:40,l:50};
+  const pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+  const maxLate=Math.max(...R.map(r=>r.total_lateness||0),1);
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:700px;height:auto">`;
+  // Defs
+  svg+=`<defs>
+    <linearGradient id="fgGreen" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="var(--g)" stop-opacity=".12"/><stop offset="100%" stop-color="var(--g)" stop-opacity=".03"/></linearGradient>
+    <linearGradient id="fgRed" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="var(--r)" stop-opacity=".03"/><stop offset="100%" stop-color="var(--r)" stop-opacity=".12"/></linearGradient>
+  </defs>`;
+
+  // Background zones
+  if(bTau!==null&&fTau!==null){
+    const bx=pad.l+bTau*pw;
+    const fx=pad.l+fTau*pw;
+    svg+=`<rect x="${pad.l}" y="${pad.t}" width="${bx-pad.l}" height="${ph}" fill="url(#fgGreen)"/>`;
+    svg+=`<rect x="${fx}" y="${pad.t}" width="${pad.l+pw-fx}" height="${ph}" fill="url(#fgRed)"/>`;
+    // Boundary line
+    const mx=(bx+fx)/2;
+    svg+=`<line x1="${mx}" y1="${pad.t-5}" x2="${mx}" y2="${pad.t+ph+5}" stroke="var(--am)" stroke-width="2" stroke-dasharray="4,3"/>`;
+    svg+=`<text x="${mx}" y="${pad.t-10}" text-anchor="middle" font-size="9" font-weight="700" fill="var(--am)" font-family="Inter">Boundary &tau;=${((bTau+fTau)/2).toFixed(2)}</text>`;
+  }
+
+  // Grid
+  for(let i=0;i<=4;i++){
+    const y=pad.t+ph/4*i;
+    svg+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#e5e7eb"/>`;
+    svg+=`<text x="${pad.l-4}" y="${y+3}" fill="#9ca3af" font-size="8" text-anchor="end" font-family="Inter">${(maxLate*(1-i/4)).toFixed(0)}</text>`;
+  }
+
+  // X axis
+  for(let i=0;i<=10;i++){
+    const x=pad.l+pw/10*i;
+    svg+=`<text x="${x}" y="${H-pad.b+14}" fill="#9ca3af" font-size="8" text-anchor="middle" font-family="Inter">${(i/10).toFixed(1)}</text>`;
+  }
+  svg+=`<text x="${pad.l+pw/2}" y="${H-4}" fill="var(--dim)" font-size="9" text-anchor="middle" font-family="Inter">Tightness Factor (&tau;)</text>`;
+  svg+=`<text x="${pad.l-8}" y="${pad.t-12}" fill="var(--dim)" font-size="8" font-family="Inter">Late patients</text>`;
+
+  // Area fill under lateness curve
+  let area=`M${pad.l+R[0].tau*pw},${pad.t+ph} `;
+  R.forEach(r=>{area+=`L${pad.l+r.tau*pw},${pad.t+ph-(r.total_lateness/maxLate)*ph} `});
+  area+=`L${pad.l+R[R.length-1].tau*pw},${pad.t+ph} Z`;
+  svg+=`<path d="${area}" fill="rgba(220,38,38,.06)"/>`;
+
+  // Line
+  let path=R.map((r,i)=>`${i?'L':'M'}${pad.l+r.tau*pw},${pad.t+ph-(r.total_lateness/maxLate)*ph}`).join(' ');
+  svg+=`<path d="${path}" fill="none" stroke="var(--r)" stroke-width="2.5" stroke-linejoin="round"/>`;
+
+  // Dots
+  R.forEach(r=>{
+    const cx=pad.l+r.tau*pw,cy=pad.t+ph-(r.total_lateness/maxLate)*ph;
+    const col=r.all_on_time?'var(--g)':'var(--r)';
+    svg+=`<circle cx="${cx}" cy="${cy}" r="5" fill="${col}" fill-opacity=".15"/>`;
+    svg+=`<circle cx="${cx}" cy="${cy}" r="3.5" fill="${col}" stroke="#fff" stroke-width="1.5"/>`;
+  });
+
+  // Labels
+  svg+=`<rect x="${W-pad.r-90}" y="${pad.t}" width="86" height="30" rx="4" fill="#fff" fill-opacity=".9" stroke="var(--brd)"/>`;
+  svg+=`<circle cx="${W-pad.r-78}" cy="${pad.t+10}" r="3" fill="var(--g)"/><text x="${W-pad.r-72}" y="${pad.t+13}" fill="var(--dim)" font-size="8" font-family="Inter">Feasible</text>`;
+  svg+=`<circle cx="${W-pad.r-78}" cy="${pad.t+22}" r="3" fill="var(--r)"/><text x="${W-pad.r-72}" y="${pad.t+25}" fill="var(--dim)" font-size="8" font-family="Inter">Infeasible</text>`;
+
+  svg+=`</svg>`;
+
+  // Summary cards
+  const feasCount=R.filter(r=>r.all_on_time).length;
+  let h=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+    <div class="pm"><div class="pv">${data.n}</div><div class="pl">Patients</div></div>
+    <div class="pm"><div class="pv" style="color:var(--g)">${feasCount}/${R.length}</div><div class="pl">Feasible Points</div></div>
+    <div class="pm"><div class="pv" style="color:var(--am)">${bTau!==null?'&tau;='+bTau.toFixed(2):'N/A'}</div><div class="pl">Last Feasible</div></div>
+    <div class="pm"><div class="pv" style="color:var(--r)">${fTau!==null?'&tau;='+fTau.toFixed(2):'N/A'}</div><div class="pl">First Late</div></div>
+  </div>`;
+  h+=`<div style="text-align:center">${svg}</div>`;
+
+  // Insight text
+  if(bTau!==null&&fTau!==null){
+    h+=`<div style="margin-top:12px;padding:10px 14px;background:#f8f9fb;border-radius:6px;border-left:3px solid var(--am);font-size:11px;color:var(--dim);line-height:1.6">
+      <b style="color:var(--tx)">Feasibility Boundary:</b> The supply chain meets all patient deadlines for &tau; &le; ${bTau.toFixed(2)}.
+      At &tau; = ${fTau.toFixed(2)}, ${R.find(r=>r.tau===fTau)?.num_late||'some'} patients exceed their deadline.
+      The physical minimum turnaround is 17 days — high-urgency patients (base_due=16d) become infeasible when tolerance drops below 1 day.
+    </div>`;
+  }else if(feasCount===R.length){
+    h+=`<div style="margin-top:12px;padding:10px 14px;background:var(--gb);border-radius:6px;border-left:3px solid var(--g);font-size:11px;color:var(--g);font-weight:600">
+      All ${R.length} tau values are feasible — all patients meet their deadlines at every tightness level.
+    </div>`;
+  }
+
+  document.getElementById('feasBody').innerHTML=h;
+  document.getElementById('feasSection').scrollIntoView({behavior:'smooth'});
+}
+
+// Init
+uTau();pre('tau');
+</script>
+</body>
+</html>
